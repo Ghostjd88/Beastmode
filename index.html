@@ -2,7 +2,7 @@
 <html lang="es" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,6 +17,7 @@
 html{background:var(--bg);transition:background .25s}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:calc(72px + env(safe-area-inset-bottom,16px) + 16px);font-size:16px;transition:background .25s,color .25s}
 button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;background:none;color:var(--text)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 input,textarea{font-family:'DM Sans',sans-serif;color:var(--text);background:none;border:none;outline:none;-webkit-appearance:none;font-size:16px}
 input[type=checkbox]{-webkit-appearance:checkbox;appearance:checkbox}
 .app-header{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);padding:14px 20px 12px;display:flex;align-items:center;justify-content:space-between;transition:background .25s}
@@ -210,16 +211,11 @@ input[type=checkbox]{-webkit-appearance:checkbox;appearance:checkbox}
 </head>
 <body>
 
-<!-- ONBOARDING --></div>
-</div>
-
 <header class="app-header">
   <div class="app-title">BEAST<span>MODE</span></div>
   <div class="header-right">
     <div class="clock-widget"><div class="clock-time" id="cl-t">--:--</div><div class="clock-date" id="cl-d">---</div></div>
-      <div class="clock-date" id="clock-date">---</div>
-    </div>
-    <button class="theme-btn" id="tbtn" onclick="toggleTheme()">☀️</button>
+    <button class="theme-btn" id="tbtn" onclick="toggleTheme()" aria-label="Cambiar tema">☀️</button>
   </div>
 </header>
 <div id="page-dashboard" class="page active"></div>
@@ -229,28 +225,30 @@ input[type=checkbox]{-webkit-appearance:checkbox;appearance:checkbox}
 <div id="page-habits" class="page"></div>
 <div id="page-bmi" class="page"></div>
 <nav class="bottom-nav">
-  <button class="nav-btn active" onclick="showPage('dashboard',this)">
+  <button class="nav-btn active" onclick="showPage('dashboard',this)" aria-label="Home">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Home
   </button>
-  <button class="nav-btn" onclick="showPage('workout',this)">
+  <button class="nav-btn" onclick="showPage('workout',this)" aria-label="Gym">
     <svg viewBox="0 0 24 24"><path d="M6 5v14M18 5v14M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg><span id="nv1">Gym</span>
   </button>
-  <button class="nav-btn" onclick="showPage('meals',this)">
+  <button class="nav-btn" onclick="showPage('meals',this)" aria-label="Meals">
     <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg><span id="nv2">Meals</span>
   </button>
-  <button class="nav-btn" onclick="showPage('progress',this)">
+  <button class="nav-btn" onclick="showPage('progress',this)" aria-label="Progress">
     <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span id="nv3">Progress</span>
   </button>
-  <button class="nav-btn" onclick="showPage('habits',this)">
+  <button class="nav-btn" onclick="showPage('habits',this)" aria-label="Habits">
     <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><span id="nv4">Habits</span>
   </button>
-  <button class="nav-btn" onclick="showPage('bmi',this)">
+  <button class="nav-btn" onclick="showPage('bmi',this)" aria-label="BMI">
     <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v6l4 2"/></svg><span id="nv5">BMI</span>
   </button>
 </nav>
 <div class="toast" id="toast"></div>
 <script>
 const DS=['L','M','X','J','V','S','D'],WK=8,SS=['Day 1','Day 2','Day 3','Day 4','Day 5','Day 6'];
+const h=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const enc=v=>encodeURIComponent(String(v??''));
 // Macros: {kcal, p=protein, c=carbs, f=fat}
 const CATS={
   'Proteínas 🥩':{color:'#c0392b',items:{
@@ -662,25 +660,25 @@ Object.entries(S.userLibrary).forEach(([k,v])=>MACROS[k]=v);
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">${i('cw')} (lb)</div>
-          <input type="number" value="${b.weight||''}" placeholder="185" oninput="upB('weight',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:${c.b};outline:none">
+          <input type="number" aria-label="Peso actual en libras" value="${b.weight||''}" placeholder="185" oninput="upB('weight',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:${c.b};outline:none">
         </div>
         <div>
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Peso meta (lb)</div>
-          <input type="number" value="${b.goalWeight||''}" placeholder="165" oninput="upB('goalWeight',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:${c.t};outline:none">
+          <input type="number" aria-label="Peso objetivo en libras" value="${b.goalWeight||''}" placeholder="165" oninput="upB('goalWeight',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:${c.t};outline:none">
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Pies</div>
-          <input type="number" value="${b.heightFt||''}" placeholder="5" oninput="upB('heightFt',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
+          <input type="number" aria-label="Altura en pies" value="${b.heightFt||''}" placeholder="5" oninput="upB('heightFt',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
         </div>
         <div>
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Pulgadas</div>
-          <input type="number" value="${b.heightIn||''}" placeholder="10" oninput="upB('heightIn',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
+          <input type="number" aria-label="Altura en pulgadas" value="${b.heightIn||''}" placeholder="10" oninput="upB('heightIn',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
         </div>
         <div>
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Edad</div>
-          <input type="number" value="${b.age||''}" placeholder="30" oninput="upB('age',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
+          <input type="number" aria-label="Edad" value="${b.age||''}" placeholder="30" oninput="upB('age',this.value)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -703,8 +701,38 @@ Object.entries(S.userLibrary).forEach(([k,v])=>MACROS[k]=v);
         </div>
       </div>
     </div>
-    <div id="bmi-results"></div>`;
+    <div id="bmi-results"></div>
+    <div class="sec-label">Respaldo</div>
+    <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="scan-btn secondary" onclick="exportData()" style="margin:0">Exportar datos</button>
+      <button class="scan-btn secondary" onclick="document.getElementById('backup-input').click()" style="margin:0">Importar datos</button>
+      <input id="backup-input" type="file" accept="application/json,.json" hidden onchange="importData(event)">
+    </div>`;
   rBMIResults();
+}
+
+function exportData(){
+  const blob=new Blob([JSON.stringify({version:6,exportedAt:new Date().toISOString(),state:S},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='beastmode-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function importData(event){
+  const file=event.target.files?.[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const raw=JSON.parse(reader.result),next=raw.state||raw;
+      if(!next||typeof next!=='object'||!Array.isArray(next.meals)||!Array.isArray(next.progress)||!next.workouts)throw new Error('invalid');
+      S={...JSON.parse(JSON.stringify(DEF)),...next,body:{...DEF.body,...(next.body||{})}};
+      if(!S.userLibrary||typeof S.userLibrary!=='object')S.userLibrary={};
+      Object.entries(S.userLibrary).forEach(([k,v])=>MACROS[k]=v);
+      save();document.documentElement.setAttribute('data-theme',S.theme||'light');rBMI();toast('Datos importados ✓');
+    }catch(e){toast('Archivo de respaldo inválido');}
+    event.target.value='';
+  };
+  reader.readAsText(file);
 }
 
 function rDash(){
@@ -782,7 +810,7 @@ function rDash(){
 
   document.getElementById('page-dashboard').innerHTML=`
   <div style="padding:4px 0 16px">
-    <div style="font-size:13px;color:var(--text3);font-weight:500;margin-bottom:2px">${i('daysF')[todayD]}${S.userName?' · '+S.userName:''} 💪</div>
+    <div style="font-size:13px;color:var(--text3);font-weight:500;margin-bottom:2px">${i('daysF')[todayD]}${S.userName?' · '+h(S.userName):''} 💪</div>
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;letter-spacing:.02em;line-height:1">
       ${b.weight?`<span style="color:var(--text)">${b.weight} lb</span> <span style="font-size:18px;color:var(--text3)">→</span> <span style="color:${c.t}">${b.goalWeight||'?'} lb</span>`:
       '<span style="color:var(--text)">BEAST MODE</span>'}
@@ -995,13 +1023,13 @@ function rWork(){
           <tbody>
             ${sec.rows.map(r=>`<tr style="border-top:1px solid var(--border)">
               <td style="padding:8px 4px 8px 0">
-                <input style="font-size:14px;font-weight:500;color:var(--text);width:100%;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif" value="${r.exercises}" oninput="S.workouts['${S.activePhase}'][${r.idx}].exercises=this.value;save()">
+                <input aria-label="Ejercicios" style="font-size:14px;font-weight:500;color:var(--text);width:100%;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif" value="${h(r.exercises)}" oninput="S.workouts['${S.activePhase}'][${r.idx}].exercises=this.value;save()">
               </td>
               <td style="padding:8px 4px;text-align:center">
-                <input style="font-size:13px;font-weight:700;color:${cur.color};width:100%;background:transparent;border:none;outline:none;text-align:center;font-family:'Barlow Condensed',sans-serif" value="${r.reps}" oninput="S.workouts['${S.activePhase}'][${r.idx}].reps=this.value;save()">
+                <input aria-label="Series y repeticiones" style="font-size:13px;font-weight:700;color:${cur.color};width:100%;background:transparent;border:none;outline:none;text-align:center;font-family:'Barlow Condensed',sans-serif" value="${h(r.reps)}" oninput="S.workouts['${S.activePhase}'][${r.idx}].reps=this.value;save()">
               </td>
               <td style="padding:8px 0 8px 4px">
-                <input style="font-size:12px;color:var(--text3);width:100%;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif" value="${r.notes||''}" placeholder="notes..." oninput="S.workouts['${S.activePhase}'][${r.idx}].notes=this.value;save()">
+                <input aria-label="Notas del ejercicio" style="font-size:12px;color:var(--text3);width:100%;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif" value="${h(r.notes)}" placeholder="notes..." oninput="S.workouts['${S.activePhase}'][${r.idx}].notes=this.value;save()">
               </td>
             </tr>`).join('')}
           </tbody>
@@ -1055,7 +1083,7 @@ return`<div class="card ca-teal" style="margin-bottom:12px">
 </div>
 </div>`}
 function toggleCat(id){const b=document.getElementById('cb-'+id),a=document.getElementById('ca-'+id);if(!b||!a)return;b.classList.toggle('open');a.classList.toggle('open')}
-const USDA_KEY='swIXJ6xcUyb9z2Utz6wKIkFR3vZQHog0vArtRJnL';
+const USDA_KEY='DEMO_KEY';
 let searchTimer=null,searchSelected=null;
 async function doSearch(mi,query){
   if(!query.trim()){document.getElementById('sr-'+mi).style.display='none';return}
@@ -1063,15 +1091,16 @@ async function doSearch(mi,query){
   sp.style.display='block';si.style.display='none';
   try{
     const res=await fetch('https://api.nal.usda.gov/fdc/v1/foods/search?query='+encodeURIComponent(query)+'&pageSize=6&api_key='+USDA_KEY+'&dataType=Foundation,SR%20Legacy');
+    if(!res.ok)throw new Error('USDA '+res.status);
     const data=await res.json();
     sp.style.display='none';si.style.display='block';
     if(!data.foods||!data.foods.length){re.innerHTML='<div style="padding:12px 14px;font-size:13px;color:var(--text3)">Sin resultados — prueba en inglés</div>';re.style.display='block';return}
     re.innerHTML=data.foods.slice(0,6).map(f=>{
       const nuts=f.foodNutrients||[];
-      const get=n=>{const x=nuts.find(x=>x.nutrientName&&x.nutrientName.toLowerCase().includes(n));return x?Math.round(x.value||0):0};
-      const kcal=get('energy')||get('calorie'),p=get('protein'),c=get('carbohydrate'),fat=get('total lipid');
+      const get=(ids,names)=>{const x=nuts.find(x=>ids.includes(x.nutrientId)&&(!x.unitName||/kcal|g/i.test(x.unitName)))||nuts.find(x=>names.includes((x.nutrientName||'').toLowerCase())&&(!x.unitName||/kcal|g/i.test(x.unitName)));return x?Math.round(Number(x.value)||0):0};
+      const kcal=get([1008,2047,2048],['energy','energy (atwater general factors)','energy (atwater specific factors)']),p=get([1003],['protein']),c=get([1005],['carbohydrate, by difference']),fat=get([1004],['total lipid (fat)']);
       const nm=f.description.substring(0,46);
-      return`<div class="search-result-item" onclick="selectFood(${mi},'${nm.replace(/'/g,"\\'")}',${kcal},${p},${c},${fat})"><div class="sri-name">${nm}${f.description.length>46?'…':''}</div><div class="sri-macros"><span style="color:var(--accent)">🔥${kcal}kcal</span> <span style="color:#146eb4">P:${p}g</span> <span style="color:#b7770d">C:${c}g</span> <span style="color:#c0392b">G:${fat}g</span> <span style="font-size:10px;opacity:.5">/ 100g</span></div></div>`;
+      return`<div class="search-result-item" role="button" tabindex="0" onclick="selectFood(${mi},decodeURIComponent('${enc(nm)}'),${kcal},${p},${c},${fat})"><div class="sri-name">${h(nm)}${f.description.length>46?'…':''}</div><div class="sri-macros"><span style="color:var(--accent)">🔥${kcal}kcal</span> <span style="color:#146eb4">P:${p}g</span> <span style="color:#b7770d">C:${c}g</span> <span style="color:#c0392b">G:${fat}g</span> <span style="font-size:10px;opacity:.5">/ 100g</span></div></div>`;
     }).join('');
     re.style.display='block';
   }catch(e){
@@ -1092,7 +1121,10 @@ function addCustomFood(mi){
   if(!searchSelected||searchSelected.mi!==mi)return;
   const g=parseFloat(document.getElementById('sqi-'+mi).value)||100,r=g/100;
   const nm=Math.round(g)+'g '+searchSelected.name;
-  MACROS[nm]={kcal:Math.round(searchSelected.kcal100*r),p:Math.round(searchSelected.p100*r),c:Math.round(searchSelected.c100*r),f:Math.round(searchSelected.f100*r)};
+  const entry={kcal:Math.round(searchSelected.kcal100*r),p:Math.round(searchSelected.p100*r),c:Math.round(searchSelected.c100*r),f:Math.round(searchSelected.f100*r),serving:Math.round(g)+'g',addedAt:Date.now()};
+  MACROS[nm]=entry;
+  if(!S.userLibrary)S.userLibrary={};
+  S.userLibrary[nm]=entry;
   if(!S.mealIngredients[mi])S.mealIngredients[mi]=[...S.meals[mi].ingredients];
   if(!S.mealIngredients[mi].includes(nm))S.mealIngredients[mi].push(nm);
   S.meals[mi].ingredients=S.mealIngredients[mi];
@@ -1125,19 +1157,18 @@ function renderScanModal(){
   const hasName=f.name&&f.name.trim().length>0;
   div.innerHTML=`<div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">Escanear Nutrition Facts</div>
-    <div class="modal-sub">Toma una foto clara del panel nutricional</div>
+    <div class="modal-title">Agregar producto</div>
+    <div class="modal-sub">Toma una foto como referencia y copia los valores de la etiqueta</div>
     ${scanState.imgBase64?`<img src="${scanState.imgBase64}" style="width:100%;border-radius:12px;margin-bottom:12px;max-height:200px;object-fit:cover">`:''}
-    ${scanState.scanning?`<div class="scanning-state"><div class="scan-spinner-big"></div><div style="font-size:14px;color:var(--text2);font-weight:500">${i('sai')}</div><div style="font-size:12px;color:var(--text3);margin-top:4px">${i('ext')}</div></div>`:`
     <input type="file" id="cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleImage(event)">
-    <button class="scan-btn" onclick="document.getElementById('cam-input').click()">
+    <button class="scan-btn" onclick="document.getElementById('cam-input').click()" aria-label="Tomar o elegir foto de la etiqueta">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
       ${scanState.imgBase64?i('cp2'):i('tp')}
     </button>
     <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:10px">Datos del producto</div>
-      <input class="scan-field" id="sf-name" placeholder="Nombre del producto (ej: Avena Quaker)" value="${f.name||''}">
-      <input class="scan-field" id="sf-serving" placeholder="Porción (ej: 40g, 1 taza)" value="${f.serving||''}">
+      <input class="scan-field" id="sf-name" aria-label="Nombre del producto" placeholder="Nombre del producto (ej: Avena Quaker)" value="${h(f.name)}">
+      <input class="scan-field" id="sf-serving" aria-label="Tamaño de porción" placeholder="Porción (ej: 40g, 1 taza)" value="${h(f.serving)}">
       <div class="macro-row">
         <div class="macro-input-wrap"><div class="macro-lbl" style="color:var(--text)">🔥 Calorías</div><input class="macro-inp" id="sf-kcal" type="number" placeholder="0" value="${f.kcal||''}"></div>
         <div class="macro-input-wrap"><div class="macro-lbl" style="color:#146eb4">Proteína (g)</div><input class="macro-inp" id="sf-protein" type="number" placeholder="0" value="${f.protein||''}"></div>
@@ -1148,7 +1179,7 @@ function renderScanModal(){
         💾 Guardar en mi librería + Agregar a comida
       </button>
       <button class="scan-btn secondary" onclick="closeScanModal()">${i('cn')}</button>
-    </div>`}
+    </div>
   </div>`;
   document.body.appendChild(div);
   // attach live listeners after DOM insert
@@ -1184,47 +1215,9 @@ function handleImage(e){
   const reader=new FileReader();
   reader.onload=ev=>{
     scanState.imgBase64=ev.target.result;
-    scanState.scanning=true;
     renderScanModal();
-    analyzeWithClaude(ev.target.result);
   };
   reader.readAsDataURL(file);
-}
-async function analyzeWithClaude(dataUrl){
-  try{
-    const base64=dataUrl.split(',')[1];
-    const mediaType=dataUrl.split(';')[0].split(':')[1];
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:500,
-        messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
-          {type:'text',text:'This is a nutrition facts label. Extract the nutritional data and respond ONLY with a JSON object, no markdown, no explanation. Format: {"name":"product name if visible or empty string","serving":"serving size as shown","kcal":number,"protein":number,"carbs":number,"fat":number}. Use numbers only for kcal/protein/carbs/fat (per serving). If a value is not visible use 0.'}
-        ]}]
-      })
-    });
-    const data=await res.json();
-    const text=data.content?.[0]?.text||'{}';
-    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
-    scanState.form={
-      name:parsed.name||'',
-      serving:parsed.serving||'1 porción',
-      kcal:parsed.kcal||'',
-      protein:parsed.protein||'',
-      carbs:parsed.carbs||'',
-      fat:parsed.fat||''
-    };
-    scanState.scanning=false;
-    renderScanModal();
-  }catch(err){
-    scanState.scanning=false;
-    scanState.form={name:'',serving:'1 porción',kcal:'',protein:'',carbs:'',fat:''};
-    renderScanModal();
-    toast(i('mfl'));
-  }
 }
 function saveScannedProduct(){
   const f=scanState.form;
@@ -1275,12 +1268,12 @@ function openLibraryModal(){
     ${items.length===0?`<div class="empty">Aún no tienes productos escaneados.<br>Usa el botón 📷 en cualquier comida para agregar.</div>`
     :items.map(([name,m])=>`<div class="lib-item">
       <div style="flex:1;min-width:0">
-        <div class="lib-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
-        <div class="lib-macros">🔥${m.kcal}kcal · P:${m.p}g · C:${m.c}g · G:${m.f}g · ${m.serving}</div>
+        <div class="lib-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(name)}</div>
+        <div class="lib-macros">🔥${Number(m.kcal)||0}kcal · P:${Number(m.p)||0}g · C:${Number(m.c)||0}g · G:${Number(m.f)||0}g · ${h(m.serving)}</div>
       </div>
       <div style="display:flex;gap:6px;margin-left:10px">
-        <button class="lib-add-btn" onclick="addLibItemToMeal('${name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',${scanState.mealIdx!=null?scanState.mealIdx:0});document.getElementById('lib-modal').remove()">+ Agregar</button>
-        <button onclick="deleteFromLibrary('${name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}');renderLibraryModal()" style="padding:7px 10px;border-radius:8px;background:var(--red-dim);color:var(--red);border:none;cursor:pointer;font-size:13px">✕</button>
+        <button class="lib-add-btn" onclick="addLibItemToMeal(decodeURIComponent('${enc(name)}'),${scanState.mealIdx!=null?scanState.mealIdx:0});document.getElementById('lib-modal').remove()">+ Agregar</button>
+        <button aria-label="Eliminar ${h(name)}" onclick="deleteFromLibrary(decodeURIComponent('${enc(name)}'));renderLibraryModal()" style="padding:7px 10px;border-radius:8px;background:var(--red-dim);color:var(--red);border:none;cursor:pointer;font-size:13px">✕</button>
       </div>
     </div>`).join('')}
     <button class="scan-btn secondary" onclick="this.closest('.modal-overlay').remove()" style="margin-top:12px">${i('cl2')}</button>
@@ -1310,9 +1303,9 @@ function ingrPickerHTML(mi,si){
     const rows=Object.keys(cat.items).map(ig=>{
       const sel=si.includes(ig),m=cat.items[ig];
       const macro=`${m.p}P · ${m.c}C · ${m.f}G`;
-      return`<div class="ingr-row ${sel?'sel':''}" onclick="tgI(${mi},'${ig.replace(/'/g,"\\'")}',event)">
+      return`<div class="ingr-row ${sel?'sel':''}" role="button" tabindex="0" onclick="tgI(${mi},decodeURIComponent('${enc(ig)}'),event)">
         <div style="flex:1;min-width:0">
-          <div class="ingr-label">${ig}</div>
+          <div class="ingr-label">${h(ig)}</div>
           <div style="font-size:11px;color:${sel?'var(--teal)':'var(--text3)'};margin-top:2px">${m.kcal} kcal · ${macro}</div>
         </div>
         <div class="ingr-check">${checkIcon}</div>
@@ -1343,10 +1336,10 @@ function ingrPickerHTML(mi,si){
         ${customIngrs.map(ig=>{
           const m=MACROS[ig]||{kcal:0,p:0,c:0,f:0};
           const macro=`${m.p||0}P · ${m.c||0}C · ${m.f||0}G`;
-          return`<div class="ingr-row sel" onclick="tgI(${mi},'${ig.replace(/'/g,"\\'")}',event)">
+          return`<div class="ingr-row sel" role="button" tabindex="0" onclick="tgI(${mi},decodeURIComponent('${enc(ig)}'),event)">
             <div style="flex:1;min-width:0">
-              <div class="ingr-label">${ig}</div>
-              <div style="font-size:11px;color:#7c5cfc;margin-top:2px">${m.kcal} kcal · ${macro}${m.serving?' · '+m.serving:''}</div>
+              <div class="ingr-label">${h(ig)}</div>
+              <div style="font-size:11px;color:#7c5cfc;margin-top:2px">${Number(m.kcal)||0} kcal · ${macro}${m.serving?' · '+h(m.serving):''}</div>
             </div>
             <div class="ingr-check" style="border-color:#7c5cfc;background:#7c5cfc">${checkIcon}</div>
           </div>`;
@@ -1380,7 +1373,7 @@ function ingrPickerHTML(mi,si){
 function rMeals(){
   syncDay();
   const c=C(),d=S.activeMealDay;
-  const allIngr=S.meals.flatMap((_,mi)=>S.mealIngredients[mi]||S.meals[mi].ingredients);
+  const allIngr=S.meals.flatMap((_,mi)=>S.mealChecks[`m${mi}_d${d}`]?(S.mealIngredients[mi]||S.meals[mi].ingredients):[]);
   document.getElementById('page-meals').innerHTML=
     `<div class="sec-label">${i('sd')}</div>
     <div class="day-tabs">${DS.map((day,di)=>`<button class="dtab ${d===di?'active':''}" onclick="S.activeMealDay=${di};save();rMeals()">${day}</button>`).join('')}</div>
@@ -1389,7 +1382,7 @@ function rMeals(){
     <div class="card ca-teal">
       ${S.meals.map((m,mi)=>{
         const k=`m${mi}_d${d}`,dn=!!S.mealChecks[k],si=S.mealIngredients[`${mi}`]||m.ingredients;
-        return`<div class="meal-item ${dn?'meal-done':''}"><input type="checkbox" class="meal-check" ${dn?'checked':''} onchange="S.mealChecks['${k}']=this.checked;save();rMeals();toast(this.checked?i('mdc'):i('un'))"><div class="meal-info" style="width:100%"><input class="meal-name-in" value="${m.name}" oninput="S.meals[${mi}].name=this.value;save()">${ingrPickerHTML(mi,si)}</div></div>`;
+        return`<div class="meal-item ${dn?'meal-done':''}"><input type="checkbox" class="meal-check" aria-label="Marcar ${h(m.name)}" ${dn?'checked':''} onchange="S.mealChecks['${k}']=this.checked;save();rMeals();toast(this.checked?i('mdc'):i('un'))"><div class="meal-info" style="width:100%"><input class="meal-name-in" aria-label="Nombre de comida" value="${h(m.name)}" oninput="S.meals[${mi}].name=this.value;save()">${ingrPickerHTML(mi,si)}</div></div>`;
       }).join('')}
       <button class="add-btn" onclick="S.meals.push({name:i('nm2'),ingredients:[]});save();rMeals()">+ Añadir comida</button>
     </div>
@@ -1397,14 +1390,14 @@ function rMeals(){
     <div class="card" style="overflow-x:auto">
       <table class="mwt" style="min-width:340px">
         <thead><tr><th>Comida</th>${DS.map(x=>`<th>${x}</th>`).join('')}<th>✓</th></tr></thead>
-        <tbody>${S.meals.map((m,mi)=>{const tot=DS.reduce((s,_,di)=>s+(S.mealChecks[`m${mi}_d${di}`]?1:0),0);return`<tr><td style="max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name.split('—')[0].trim()}</td>${DS.map((_,di)=>`<td><input type="checkbox" ${S.mealChecks[`m${mi}_d${di}`]?'checked':''} onchange="S.mealChecks['m${mi}_d${di}']=this.checked;save();rMeals()"></td>`).join('')}<td><span class="mwtot" style="color:${tot===7?c.t:tot>=4?c.a:'var(--text3)'}">${tot}/7</span></td></tr>`}).join('')}</tbody>
+        <tbody>${S.meals.map((m,mi)=>{const tot=DS.reduce((s,_,di)=>s+(S.mealChecks[`m${mi}_d${di}`]?1:0),0);return`<tr><td style="max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(m.name.split('—')[0].trim())}</td>${DS.map((_,di)=>`<td><input type="checkbox" aria-label="${h(m.name)} ${DS[di]}" ${S.mealChecks[`m${mi}_d${di}`]?'checked':''} onchange="S.mealChecks['m${mi}_d${di}']=this.checked;save();rMeals()"></td>`).join('')}<td><span class="mwtot" style="color:${tot===7?c.t:tot>=4?c.a:'var(--text3)'}">${tot}/7</span></td></tr>`}).join('')}</tbody>
         <tfoot><tr class="totals-row"><td>Total</td>${DS.map((_,di)=>{const x=S.meals.reduce((s,_,mi)=>s+(S.mealChecks[`m${mi}_d${di}`]?1:0),0);return`<td style="color:${x===S.meals.length?c.t:'var(--text2)'}">${x}</td>`}).join('')}<td style="color:${c.t}"><b>${Object.values(S.mealChecks).filter(Boolean).length}</b></td></tr></tfoot>
       </table>
     </div>`;
 }
 function tgI(mi,ig,e){if(e)e.stopPropagation();if(!S.mealIngredients[mi])S.mealIngredients[mi]=[...S.meals[mi].ingredients];const a=S.mealIngredients[mi],i=a.indexOf(ig);if(i>=0)a.splice(i,1);else a.push(ig);S.meals[mi].ingredients=a;save();rMeals()}
 function rProg(){const c=C(),wi=S.activeProgressWeek,p=S.progress[wi],ws=S.progress.map(x=>parseFloat(x.weight)).filter(v=>!isNaN(v)),wch=ws.length>=2?(ws[ws.length-1]-ws[0]).toFixed(1):null;
-document.getElementById('page-progress').innerHTML=`<div class="sec-label">${i('sw2')}</div><div class="week-sel">${S.progress.map((pw,pi)=>`<button class="wpill ${wi===pi?'active':''}" onclick="S.activeProgressWeek=${pi};save();rProg()">Week ${pi+1}</button>`).join('')}</div><div class="sec-label">Week ${wi+1}</div><div class="card ca-blue"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><div style="font-size:12px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">${i('wl')}</div><input style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;color:${c.b};width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px" type="number" value="${p.weight}" placeholder="0" oninput="S.progress[${wi}].weight=this.value;save()"></div><div><div style="font-size:12px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">${i('wi')}</div><input style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;color:${c.r};width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px" type="text" value="${p.waist}" placeholder="—" oninput="S.progress[${wi}].waist=this.value;save()"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><div><div style="font-size:12px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">${i('en2')}</div><div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>`<button onclick="S.progress[${wi}].energy='${n}';save();rProg()" style="flex:1;padding:9px 0;border-radius:6px;border:1px solid ${p.energy==n?c.a:'var(--border)'};background:${p.energy==n?'var(--amber-dim)':'var(--bg3)'};color:${p.energy==n?c.a:'var(--text3)'};font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700">${n}</button>`).join('')}</div></div><div><div style="font-size:12px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">${i('st')}</div><div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>`<button onclick="S.progress[${wi}].strength='${n}';save();rProg()" style="flex:1;padding:9px 0;border-radius:6px;border:1px solid ${p.strength==n?c.b:'var(--border)'};background:${p.strength==n?'var(--blue-dim)':'var(--bg3)'};color:${p.strength==n?c.b:'var(--text3)'};font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700">${n}</button>`).join('')}</div></div></div><div style="margin-top:10px"><div style="font-size:12px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Notes</div><textarea style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--text);resize:none;height:76px;font-family:'DM Sans',sans-serif" placeholder="How did you feel this week?" oninput="S.progress[${wi}].notes=this.value;save()">${p.notes||''}</textarea></div></div><div class="sec-label">${i('s8')}</div><div class="card">${wch!==null?`<div class="prog-summary"><div class="psi"><div class="psv" style="color:${parseFloat(wch)<0?c.t:c.a}">${parseFloat(wch)<0?'':'+'}${wch} lb</div><div class="psl">${i('tc')}</div></div><div class="psi"><div class="psv" style="color:${c.b}">${ws[0]} lb</div><div class="psl">${i('sw3')}</div></div><div class="psi"><div class="psv" style="color:${c.t}">${ws[ws.length-1]} lb</div><div class="psl">${i('cw')}</div></div></div>`:`<div class="empty">${i('ew')}</div>`}<table class="check-table" style="margin-top:8px"><thead><tr><th>Wk</th><th>Weight</th><th>Waist</th><th>Energy</th><th>Strength</th></tr></thead><tbody>${S.progress.map((pw,pi)=>`<tr onclick="S.activeProgressWeek=${pi};save();rProg()" style="cursor:pointer;${wi===pi?'background:var(--bg3)':''}">><td style="color:${c.b};font-weight:700">W${pi+1}</td><td style="font-size:14px">${pw.weight||'—'}</td><td style="font-size:14px">${pw.waist||'—'}</td><td style="color:${c.a}">${pw.energy?'★'.repeat(parseInt(pw.energy)):'—'}</td><td style="color:${c.b}">${pw.strength?'★'.repeat(parseInt(pw.strength)):'—'}</td></tr>`).join('')}</tbody></table></div>`}
+document.getElementById('page-progress').innerHTML=`<div class="sec-label">${i('sw2')}</div><div class="week-sel">${S.progress.map((pw,pi)=>`<button class="wpill ${wi===pi?'active':''}" onclick="S.activeProgressWeek=${pi};save();rProg()">Week ${pi+1}</button>`).join('')}</div><div class="sec-label">Week ${wi+1}</div><div class="card ca-blue"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><div style="font-size:12px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">${i('wl')}</div><input aria-label="Peso de la semana" style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;color:${c.b};width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px" type="number" value="${h(p.weight)}" placeholder="0" oninput="S.progress[${wi}].weight=this.value;save()"></div><div><div style="font-size:12px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">${i('wi')}</div><input aria-label="Cintura de la semana" style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;color:${c.r};width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px" type="text" value="${h(p.waist)}" placeholder="—" oninput="S.progress[${wi}].waist=this.value;save()"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><div><div style="font-size:12px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">${i('en2')}</div><div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>`<button aria-label="Energía ${n}" onclick="S.progress[${wi}].energy='${n}';save();rProg()" style="flex:1;padding:9px 0;border-radius:6px;border:1px solid ${p.energy==n?c.a:'var(--border)'};background:${p.energy==n?'var(--amber-dim)':'var(--bg3)'};color:${p.energy==n?c.a:'var(--text3)'};font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700">${n}</button>`).join('')}</div></div><div><div style="font-size:12px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">${i('st')}</div><div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>`<button aria-label="Fuerza ${n}" onclick="S.progress[${wi}].strength='${n}';save();rProg()" style="flex:1;padding:9px 0;border-radius:6px;border:1px solid ${p.strength==n?c.b:'var(--border)'};background:${p.strength==n?'var(--blue-dim)':'var(--bg3)'};color:${p.strength==n?c.b:'var(--text3)'};font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700">${n}</button>`).join('')}</div></div></div><div style="margin-top:10px"><div style="font-size:12px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Notes</div><textarea aria-label="Notas de la semana" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--text);resize:none;height:76px;font-family:'DM Sans',sans-serif" placeholder="How did you feel this week?" oninput="S.progress[${wi}].notes=this.value;save()">${h(p.notes)}</textarea></div></div><div class="sec-label">${i('s8')}</div><div class="card">${wch!==null?`<div class="prog-summary"><div class="psi"><div class="psv" style="color:${parseFloat(wch)<0?c.t:c.a}">${parseFloat(wch)<0?'':'+'}${wch} lb</div><div class="psl">${i('tc')}</div></div><div class="psi"><div class="psv" style="color:${c.b}">${ws[0]} lb</div><div class="psl">${i('sw3')}</div></div><div class="psi"><div class="psv" style="color:${c.t}">${ws[ws.length-1]} lb</div><div class="psl">${i('cw')}</div></div></div>`:`<div class="empty">${i('ew')}</div>`}<table class="check-table" style="margin-top:8px"><thead><tr><th>Wk</th><th>Weight</th><th>Waist</th><th>Energy</th><th>Strength</th></tr></thead><tbody>${S.progress.map((pw,pi)=>`<tr onclick="S.activeProgressWeek=${pi};save();rProg()" style="cursor:pointer;${wi===pi?'background:var(--bg3)':''}"><td style="color:${c.b};font-weight:700">W${pi+1}</td><td style="font-size:14px">${h(pw.weight)||'—'}</td><td style="font-size:14px">${h(pw.waist)||'—'}</td><td style="color:${c.a}">${pw.energy?'★'.repeat(parseInt(pw.energy)):'—'}</td><td style="color:${c.b}">${pw.strength?'★'.repeat(parseInt(pw.strength)):'—'}</td></tr>`).join('')}</tbody></table></div>`}
 function rHabits(){const c=C(),tp=S.habitNames.map((_,hi)=>DS.reduce((s,_,di)=>s+(S.habits[`h${hi}_d${di}`]?1:0),0)),gr=tp.reduce((a,b)=>a+b,0),mx=S.habitNames.length*7;
 document.getElementById('page-habits').innerHTML=`<div class="stat-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px"><div class="sc sb" style="padding:12px"><div class="slbl" style="color:${c.b};font-size:11px">Total</div><div class="sval" style="color:${c.b};font-size:26px">${gr}</div><div class="ssub" style="font-size:11px">de ${mx}</div></div><div class="sc st" style="padding:12px"><div class="slbl" style="color:${c.t};font-size:11px">Tasa</div><div class="sval" style="color:${c.t};font-size:26px">${Math.round(gr/mx*100)}%</div><div class="ssub" style="font-size:11px">cumplimiento</div></div><div class="sc sa" style="padding:12px"><div class="slbl" style="color:${c.a};font-size:11px">Mejor</div><div class="sval" style="color:${c.a};font-size:26px">${Math.max(...tp,0)}/7</div><div class="ssub" style="font-size:11px">hábito top</div></div></div><div class="sec-label">${i('dh')}</div><div class="card ca-blue">${S.habitNames.map((h,hi)=>{const sc=tp[hi],cl=sc>=6?c.t:sc>=4?c.a:'var(--text3)';return`<div class="habit-row"><div class="habit-row-top"><div class="habit-name">${h}</div><div class="hscore" style="color:${cl}">${sc}/7</div></div><div class="habit-row-bot"><div class="habit-days">${DS.map((day,di)=>{const k=`h${hi}_d${di}`;return`<button class="hdb ${S.habits[k]?'active':''}" onclick="S.habits['h${hi}_d${di}']=!S.habits['h${hi}_d${di}'];save();rHabits();toast(S.habits['h${hi}_d${di}']?'Hábito completado ✓':'Desmarcado')">${day}</button>`}).join('')}</div></div></div>`}).join('')}</div><div class="sec-label">${i('ph2')}</div><div class="card">${S.habitNames.map((h,hi)=>{const sc=tp[hi],pct=Math.round(sc/7*100),cl=sc>=6?c.t:sc>=4?c.a:c.r;return`<div class="bar-row"><div class="bar-lbl" style="font-size:12px;width:100px">${h.split(' ').slice(0,2).join(' ')}</div><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${cl}"></div></div><div class="bar-num" style="color:${cl}">${pct}%</div></div>`}).join('')}</div>`}
 // Boot
