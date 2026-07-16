@@ -1,6 +1,7 @@
 const DS=['L','M','X','J','V','S','D'],WK=8,SS=['Day 1','Day 2','Day 3','Day 4','Day 5','Day 6'];
 const h=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const enc=v=>encodeURIComponent(String(v??''));
+const pageIntroHTML=(code,title,subtitle)=>`<div class="page-intro"><div class="page-code">${h(code)}</div><div><h1>${h(title)}</h1><p>${h(subtitle)}</p></div></div>`;
 // Macros: {kcal, p=protein, c=carbs, f=fat}
 const CATS={
   'Proteínas 🥩':{color:'#c0392b',items:{
@@ -128,16 +129,18 @@ const DEF={workouts:{
     {day:'',exercises:'Lunges',reps:'4x12',notes:'+1 set'},
     {day:'',exercises:'Calf Raises',reps:'4x20',notes:'+reps'},
     {day:'Rest',exercises:'Full recovery',reps:'—',notes:'Prioritize sleep & hydration'},
-  ]},meals:[{name:'Comida 1 — Post Entreno',ingredients:['4 huevos','150g arroz cocido','100g repollo']},{name:'Comida 2 — Almuerzo',ingredients:['8oz pechuga de pollo','150g arroz cocido','150g repollo']},{name:'Cena',ingredients:['8oz carne molida 98/2','200g repollo']}],checklist:{},mealChecks:{},mealIngredients:{},progress:Array.from({length:8},(_,i)=>({week:i+1,weight:'',waist:'',energy:'',strength:'',notes:''})),habits:{},habitNames:['Entrenamiento','10k pasos / caminar','Comida limpia','Sin alcohol','Dormir 7+ horas'],activeMealDay:0,activeProgressWeek:0,theme:'light',userLibrary:{},activePhase:'fase1',userName:'',customRoutines:[],activeRoutineId:'',workoutLogs:[],activeWorkout:null,foodFavorites:[],recentFoods:[],dailyNutrition:{},
+  ]},meals:[{name:'Comida 1 — Post Entreno',ingredients:['4 huevos','150g arroz cocido','100g repollo']},{name:'Comida 2 — Almuerzo',ingredients:['8oz pechuga de pollo','150g arroz cocido','150g repollo']},{name:'Cena',ingredients:['8oz carne molida 98/2','200g repollo']}],checklist:{},mealChecks:{},mealIngredients:{},progress:Array.from({length:8},(_,i)=>({week:i+1,weight:'',waist:'',energy:'',strength:'',notes:''})),habits:{},habitNames:['Entrenamiento','10k pasos / caminar','Comida limpia','Sin alcohol','Dormir 7+ horas'],activeMealDay:0,activeProgressWeek:0,theme:'dark',userLibrary:{},activePhase:'fase1',userName:'',customRoutines:[],activeRoutineId:'',workoutLogs:[],activeWorkout:null,foodFavorites:[],recentFoods:[],dailyNutrition:{},
   workoutUnit:'lb',restTimerSeconds:90,lastWorkoutSummaryId:'',
   body:{weight:'',goalWeight:'',heightFt:'',heightIn:'',age:'',sex:'male',activity:'moderate',kcalGoalMode:'auto',kcalGoalPick:null,kcalGoalManual:''}};
 let S=loadBeastmodeState(DEF);
 hydrateUserMacros();
 document.documentElement.setAttribute('data-theme',S.theme||'light');
 document.getElementById('tbtn').textContent=S.theme==='dark'?'☀️':'🌙';
-function toggleTheme(){S.theme=S.theme==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',S.theme);document.getElementById('tbtn').textContent=S.theme==='dark'?'☀️':'🌙';save();toast(S.theme==='light'?'☀️ Modo claro':'🌙 Modo oscuro');const cur=document.querySelector('.nav-btn.active');if(cur){const id=['dashboard','workout','meals','progress','habits','bmi'][Array.from(document.querySelectorAll('.nav-btn')).indexOf(cur)];render(id)}}
+function syncThemeChrome(){document.querySelector('meta[name="theme-color"]')?.setAttribute('content',S.theme==='dark'?'#080a0d':'#e9edf2')}
+syncThemeChrome();
+function toggleTheme(){S.theme=S.theme==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',S.theme);document.getElementById('tbtn').textContent=S.theme==='dark'?'☀️':'🌙';syncThemeChrome();save();toast(S.theme==='light'?'☀️ Modo claro':'🌙 Modo oscuro');const cur=document.querySelector('.nav-btn.active');if(cur){const id=['dashboard','workout','meals','progress','habits','bmi'][Array.from(document.querySelectorAll('.nav-btn')).indexOf(cur)];render(id)}}
 function dk(){return S.theme!=='light'}
-function C(){return dk()?{b:'#4d9fff',r:'#ff5252',t:'#00e5a0',a:'#ffb627',c:'#ff6b4a',sc:{Push:'#7c5cfc',Pull:'#4d9fff',Piernas:'#ff5252',Cardio:'#00e5a0',Upper:'#ffb627',Lower:'#ed7ef7'},rb:'rgba(255,255,255,.06)',sdim:'rgba(0,229,160,.3)',sfull:'#00e5a0'}:{b:'#146eb4',r:'#c0392b',t:'#007a4d',a:'#b7770d',c:'#c0392b',sc:{Push:'#7c5cfc',Pull:'#146eb4',Piernas:'#c0392b',Cardio:'#007a4d',Upper:'#b7770d',Lower:'#8e44ad'},rb:'rgba(0,0,0,.06)',sdim:'rgba(20,110,180,.25)',sfull:'#146eb4'}}
+function C(){return dk()?{b:'#3b82f6',r:'#ff6868',t:'#b7f34a',a:'#3b82f6',c:'#ff6868',sc:{Push:'#3b82f6',Pull:'#3b82f6',Piernas:'#ff6868',Cardio:'#b7f34a',Upper:'#3b82f6',Lower:'#b7f34a'},rb:'rgba(255,255,255,.08)',sdim:'rgba(183,243,74,.25)',sfull:'#b7f34a'}:{b:'#1558d6',r:'#b83a3a',t:'#4d7508',a:'#1558d6',c:'#b83a3a',sc:{Push:'#1558d6',Pull:'#1558d6',Piernas:'#b83a3a',Cardio:'#4d7508',Upper:'#1558d6',Lower:'#4d7508'},rb:'rgba(15,24,32,.08)',sdim:'rgba(77,117,8,.2)',sfull:'#4d7508'}}
 function completeWeek(){
   const curWk=S.activeProgressWeek+1;
   if(curWk>=8){toast('All 8 weeks complete! Great work! 🏆');return;}
@@ -346,7 +349,7 @@ function rBMIResults(){
 function rBMI(){
   const c=C(),b=S.body;
   document.getElementById('page-bmi').innerHTML=`
-    <div class="sec-label">${i('bp')}</div>
+    ${pageIntroHTML('PROFILE // 05','Body & Settings','Calibrate targets, protect data, and control the experience.')}<div class="sec-label">${i('bp')}</div>
     <div class="card ca-blue" style="margin-bottom:12px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
@@ -479,8 +482,8 @@ function rDash(){
   const toGo=b.weight&&b.goalWeight?(parseFloat(b.weight)-parseFloat(b.goalWeight)).toFixed(1):null;
 
   document.getElementById('page-dashboard').innerHTML=`
-  <div style="padding:4px 0 16px">
-    <div style="font-size:13px;color:var(--text3);font-weight:500;margin-bottom:2px">${i('daysF')[todayD]}${S.userName?' · '+h(S.userName):''} 💪</div>
+  <div class="mission-hero" style="padding:4px 0 16px">
+    <div class="mission-kicker">TODAY'S MISSION // ${i('daysF')[todayD]}${S.userName?' · '+h(S.userName):''}</div>
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;letter-spacing:.02em;line-height:1">
       ${b.weight?`<span style="color:var(--text)">${b.weight} lb</span> <span style="font-size:18px;color:var(--text3)">→</span> <span style="color:${c.t}">${b.goalWeight||'?'} lb</span>`:
       '<span style="color:var(--text)">BEAST MODE</span>'}
@@ -490,7 +493,7 @@ function rDash(){
 
   <!-- ACTIVITY RINGS -->
   <!-- WEEK COMPLETION CARD -->
-  <div style="background:${isDark?'#13131a':'#fff'};border:2px solid ${S.activeProgressWeek>=7?c.t:c.b+'44'};border-radius:14px;padding:14px 16px;margin-bottom:14px;${isDark?'':'box-shadow:0 1px 5px rgba(0,0,0,.07)'}">
+  <div class="week-command" style="background:${isDark?'#13131a':'#fff'};border:2px solid ${S.activeProgressWeek>=7?c.t:c.b+'44'};border-radius:14px;padding:14px 16px;margin-bottom:14px;${isDark?'':'box-shadow:0 1px 5px rgba(0,0,0,.07)'}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div>
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:var(--text)">Week ${S.activeProgressWeek+1} <span style="font-size:13px;font-weight:500;color:var(--text3)">of 8</span></div>
@@ -505,7 +508,7 @@ function rDash(){
   <div style="background:${isDark?'#13131a':'#fff'};border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;${isDark?'':'box-shadow:0 1px 6px rgba(0,0,0,.07)'}">
     <div style="display:flex;align-items:center;gap:16px">
       <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
-        ${arcSVG(sessPct,'#7c5cfc',50,10,120)}
+        ${arcSVG(sessPct,c.b,50,10,120)}
         ${arcSVG(habPct,c.t,36,9,120).replace('width="120" height="120"','width="120" height="120" style="position:absolute;top:0;left:0"')}
         ${arcSVG(mealPct,c.r,22,8,120).replace('width="120" height="120"','width="120" height="120" style="position:absolute;top:0;left:0"')}
       </div>
@@ -513,15 +516,15 @@ function rDash(){
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
             <div style="display:flex;align-items:center;gap:6px">
-              <div style="width:9px;height:9px;border-radius:50%;background:#7c5cfc;flex-shrink:0"></div>
+              <div style="width:9px;height:9px;border-radius:50%;background:${c.b};flex-shrink:0"></div>
               <div style="font-size:13px;font-weight:600;color:var(--text)">${i('sess')}</div>
             </div>
             <div style="display:flex;align-items:baseline;gap:4px">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:#7c5cfc">${ts}/${ms}</div>
-              <div style="font-size:11px;color:#7c5cfc;opacity:.7">${sessPct}%</div>
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:${c.b}">${ts}/${ms}</div>
+              <div style="font-size:11px;color:${c.b};opacity:.8">${sessPct}%</div>
             </div>
           </div>
-          <div style="height:5px;border-radius:99px;background:rgba(124,92,252,.15)"><div style="width:${sessPct}%;height:5px;border-radius:99px;background:#7c5cfc;transition:width .4s"></div></div>
+          <div style="height:5px;border-radius:99px;background:var(--blue-dim)"><div style="width:${sessPct}%;height:5px;border-radius:99px;background:${c.b};transition:width .4s"></div></div>
         </div>
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -619,13 +622,13 @@ function rDash(){
   <div style="background:${isDark?'#13131a':'#fff'};border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;${isDark?'':'box-shadow:0 1px 5px rgba(0,0,0,.07)'}">
     ${sc.map((x,si)=>{
       const pct=Math.round(x/SS.length*100);
-      const col=x===SS.length?'#7c5cfc':x>=3?c.b:c.b+'66';
+      const col=x===SS.length?c.t:x>=3?c.b:c.b+'66';
       return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:${si<sc.length-1?'10':'0'}px">
         <div style="font-size:12px;font-weight:600;color:var(--text2);width:52px;flex-shrink:0">Week ${si+1}</div>
         <div style="flex:1;height:7px;border-radius:99px;background:rgba(128,128,128,.1)">
           <div style="width:${pct}%;height:7px;border-radius:99px;background:${col};transition:width .4s"></div>
         </div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:${x===SS.length?'#7c5cfc':'var(--text3)'};width:28px;text-align:right">${x}/${SS.length}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:${x===SS.length?c.t:'var(--text3)'};width:28px;text-align:right">${x}/${SS.length}</div>
       </div>`;
     }).join('')}
   </div>
@@ -634,9 +637,9 @@ function rDash(){
   <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">${i('cl')}</div>
   <div style="background:${isDark?'#13131a':'#fff'};border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;overflow-x:auto;${isDark?'':'box-shadow:0 1px 5px rgba(0,0,0,.07)'}">
     <table class="check-table" style="min-width:400px">
-      <thead><tr><th>Sesión</th>${Array.from({length:WK},(_,w)=>`<th>S${w+1}</th>`).join('')}<th style="color:#7c5cfc">✓</th></tr></thead>
+      <thead><tr><th>Sesión</th>${Array.from({length:WK},(_,w)=>`<th>S${w+1}</th>`).join('')}<th style="color:${c.t}">✓</th></tr></thead>
       <tbody>${SS.map(s=>{const dn=Array.from({length:WK},(_,w)=>S.checklist[`${s}_w${w+1}`]?1:0).reduce((a,b)=>a+b,0);return`<tr><td>${s}</td>${Array.from({length:WK},(_,w)=>{const k=`${s}_w${w+1}`;return`<td><input type="checkbox" ${S.checklist[k]?'checked':''} onchange="S.checklist['${k}']=this.checked;save();rDash()"></td>`}).join('')}<td><span class="ctotal" style="color:${dn===8?c.t:dn>=4?c.a:'var(--text3)'}">${dn}</span></td></tr>`}).join('')}</tbody>
-      <tfoot><tr class="totals-row"><td>Total</td>${Array.from({length:WK},(_,w)=>{const x=SS.reduce((s,n)=>s+(S.checklist[`${n}_w${w+1}`]?1:0),0);return`<td style="color:${x===SS.length?c.t:'var(--text2)'}"><b>${x}</b></td>`}).join('')}<td style="color:#7c5cfc"><b>${ts}</b></td></tr></tfoot>
+      <tfoot><tr class="totals-row"><td>Total</td>${Array.from({length:WK},(_,w)=>{const x=SS.reduce((s,n)=>s+(S.checklist[`${n}_w${w+1}`]?1:0),0);return`<td style="color:${x===SS.length?c.t:'var(--text2)'}"><b>${x}</b></td>`}).join('')}<td style="color:${c.t}"><b>${ts}</b></td></tr></tfoot>
     </table>
   </div>`;
   if(typeof renderInsights==='function')renderInsights();

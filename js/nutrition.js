@@ -341,7 +341,7 @@ function rMeals(){
   recordNutritionSnapshot(d);
   const allIngr=S.meals.flatMap((_,mi)=>S.mealChecks[`m${mi}_d${d}`]?(S.mealIngredients[mi]||S.meals[mi].ingredients):[]);
   document.getElementById('page-meals').innerHTML=
-    `<div class="sec-label">${i('sd')}</div>
+    `${pageIntroHTML('FUEL // 02','Nutrition','Fuel the work. Track what matters. Keep it repeatable.')}<div class="sec-label">${i('sd')}</div>
     <div class="day-tabs">${DS.map((day,di)=>`<button class="dtab ${d===di?'active':''}" onclick="S.activeMealDay=${di};save();rMeals()">${day}</button>`).join('')}</div>
     ${macroCard(allIngr)}
     <div class="sec-label">${i('mt')}</div>

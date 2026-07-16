@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const html=read('index.html'),css=read('css/styles.css');
+const html=read('index.html'),css=read('css/styles.css'),forged=read('css/forged.css');
 const modulePaths=['js/storage.js','js/app.js','js/workouts.js','js/exercises.js','js/nutrition.js','js/progress.js','js/insights.js','js/security.js','js/pwa.js','js/bootstrap.js','js/browser-check.js'];
 const modules=Object.fromEntries(modulePaths.map(path=>[path,read(path)]));
 const script=modulePaths.map(path=>modules[path]).join('\n');
@@ -15,9 +15,11 @@ test('JavaScript modules parse',()=>modulePaths.forEach(path=>assert.doesNotThro
 test('index uses maintainable external modules',()=>{
   assert.doesNotMatch(html,/<style>|<script>(?!\s*<\/script>)/);
   assert.match(html,/\.\/css\/styles\.css/);
+  assert.match(html,/\.\/css\/forged\.css/);
   for(const path of modulePaths)assert.match(html,new RegExp(path.replace(/[./]/g,'\\$&')));
   assert.ok(css.length>10000);
 });
+test('forged design system has a distinct accessible visual language',()=>{assert.match(forged,/--bg:#080a0d/);assert.match(forged,/--accent:#3b82f6/);assert.match(forged,/--teal:#b7f34a/);assert.match(forged,/TRAIN \/\/ 01/);assert.match(forged,/prefers-reduced-motion/);assert.match(forged,/\.nav-btn\.active::before/);assert.match(html,/TRAIN \/\/ TRACK \/\/ EVOLVE/)});
 test('document has one clock and balanced primary structure',()=>{
   assert.equal((html.match(/id="cl-t"/g)||[]).length,1);
   assert.equal((html.match(/id="cl-d"/g)||[]).length,1);
@@ -76,7 +78,7 @@ test('mobile workout flow supports timers, recovery, routine controls, substitut
 test('nutrition supports favorites, recent foods, servings and daily history',()=>{const nutrition=modules['js/nutrition.js'];for(const name of ['toggleFoodFavorite','markFoodRecent','recordNutritionSnapshot','editLibraryProduct'])assert.match(nutrition,new RegExp(`function ${name}`));assert.match(nutrition,/Favorites & recent/);assert.match(nutrition,/serving/)});
 test('dashboard provides summaries, charts and personal records',()=>{const insights=modules['js/insights.js'];assert.match(insights,/Weekly coaching summary/);assert.match(insights,/Training volume/);assert.match(insights,/Calories/);assert.match(insights,/Personal records/)});
 test('optional PIN uses salted hashing and attempt cooldown',()=>{const security=modules['js/security.js'];assert.match(security,/crypto\.subtle\.digest\('SHA-256'/);assert.match(security,/crypto\.getRandomValues/);assert.match(security,/pinCooldownUntil/);assert.match(security,/does not encrypt browser storage/)});
-test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v9/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
+test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v10/);assert.match(serviceWorker,/css\/forged\.css/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
 test('browser self-test covers core application surfaces',()=>{
   const selfTest=modules['js/browser-check.js'];
   for(const label of ['Versioned storage write','Backup validation','Workout rendering','Mobile workout flow','Nutrition rendering','Progress validation','Exercise dataset'])assert.match(selfTest,new RegExp(label));
