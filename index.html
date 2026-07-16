@@ -196,8 +196,6 @@ input[type=checkbox]{-webkit-appearance:checkbox;appearance:checkbox}
 .lib-name{font-size:14px;font-weight:500;color:var(--text)}
 .lib-macros{font-size:12px;color:var(--text3);margin-top:2px}
 .lib-add-btn{padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;border:none;cursor:pointer;white-space:nowrap}
-.scanning-state{text-align:center;padding:20px 0}
-.scan-spinner-big{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
 /* ONBOARDING */
 [data-theme="dark"] .ob-logo span{color:#4d9fff}
 [data-theme="light"] .ob-logo span{color:#146eb4}
@@ -471,14 +469,8 @@ const LANG_EN={
   fp2:'Weight, height, age and activity to calculate calories',
   lf:'Lose fast',ls:'Lose slow',ma:'Maintain',gm:'Gain muscle',gms:'Bulk',
   w1:'-1 lb/wk',w05:'-0.5 lb/wk',ml2:'Maintenance',p05:'+0.5 lb/wk',p1l:'+1 lb/wk',
-  sct:'Scan Nutrition Facts',scs:'Take a clear photo of the nutrition label',
-  cp2:'Change photo',tp:'Take / Choose photo',pd:'Product info',
-  pn:'Product name (e.g. Quaker Oats)',pl:'Serving (e.g. 40g, 1 cup)',
-  sl:'Save to my library + Add to meal',
-  cn:'Cancel',sai:'Analyzing with AI...',ext:'Extracting nutritional data',
-  nr:'No results',ce:'Connection error',mfl:'Could not read - fill in manually',
+  cn:'Cancel',
   myl:'My Personal Library',atm:'+ Add',cl2:'Close',
-  np2:'No scanned products yet.',sh:'Use the camera button to add.',
   add:'added',svl:'saved to your library',mdc:'Meal done',
   nd:'New day',nm2:'New meal',
   days:['M','T','W','Th','F','Sa','Su'],
@@ -1134,11 +1126,11 @@ function addCustomFood(mi){
   save();rMeals();toast('✓ '+nm+ ' '+i('add'));
 }
 
-let scanState={open:false,mealIdx:null,imgBase64:null,scanning:false,progress:'',rawText:'',
+let scanState={open:false,mealIdx:null,
   form:{name:'',serving:'',kcal:'',protein:'',carbs:'',fat:''}};
 
 function openScanModal(mi){
-  scanState={open:true,mealIdx:mi,imgBase64:null,scanning:false,progress:'',rawText:'',
+  scanState={open:true,mealIdx:mi,
     form:{name:'',serving:'100g',kcal:'',protein:'',carbs:'',fat:''}};
   renderScanModal();
 }
@@ -1158,14 +1150,7 @@ function renderScanModal(){
   div.innerHTML=`<div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">Agregar producto</div>
-    <div class="modal-sub">Toma una foto como referencia y copia los valores de la etiqueta</div>
-    ${scanState.imgBase64?`<img src="${scanState.imgBase64}" style="width:100%;border-radius:12px;margin-bottom:12px;max-height:200px;object-fit:cover">`:''}
-    ${scanState.scanning?`<div class="scanning-state"><div class="scan-spinner-big"></div><div id="ocr-status" role="status" style="font-size:14px;color:var(--text2);font-weight:500">${h(scanState.progress||'Preparando OCR…')}</div><div style="font-size:12px;color:var(--text3);margin-top:4px">El análisis ocurre solamente en este dispositivo</div></div>`:''}
-    <input type="file" id="cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleImage(event)">
-    <button class="scan-btn" ${scanState.scanning?'disabled':''} onclick="document.getElementById('cam-input').click()" aria-label="Tomar o elegir foto de la etiqueta">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      ${scanState.imgBase64?i('cp2'):i('tp')}
-    </button>
+    <div class="modal-sub">Ingresa los valores de la etiqueta una sola vez y guárdalos en tu librería personal</div>
     <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:10px">Datos del producto</div>
       <input class="scan-field" id="sf-name" aria-label="Nombre del producto" placeholder="Nombre del producto (ej: Avena Quaker)" value="${h(f.name)}">
@@ -1179,7 +1164,6 @@ function renderScanModal(){
       <button class="scan-btn" id="save-scan-btn" onclick="collectAndSave()" style="margin-top:8px;${!hasName?'opacity:.45;':''}">
         💾 Guardar en mi librería + Agregar a comida
       </button>
-      ${scanState.rawText?`<details style="margin:10px 0 14px"><summary style="font-size:12px;color:var(--text3);cursor:pointer">Ver texto detectado</summary><pre style="white-space:pre-wrap;font-size:11px;color:var(--text2);background:var(--bg3);padding:10px;border-radius:8px;margin-top:8px;max-height:180px;overflow:auto">${h(scanState.rawText)}</pre></details>`:''}
       <button class="scan-btn secondary" onclick="closeScanModal()">${i('cn')}</button>
     </div>
   </div>`;
@@ -1207,87 +1191,6 @@ function collectAndSave(){
   const fields={name:'sf-name',serving:'sf-serving',kcal:'sf-kcal',protein:'sf-protein',carbs:'sf-carbs',fat:'sf-fat'};
   Object.entries(fields).forEach(([k,id])=>{const el=document.getElementById(id);if(el)scanState.form[k]=el.value;});
   saveScannedProduct();
-}
-function triggerCamera(){
-  document.getElementById('cam-input')?.click();
-}
-function handleImage(e){
-  const file=e.target.files[0];
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    scanState.imgBase64=ev.target.result;
-    scanState.scanning=true;
-    scanState.progress='Preparando OCR…';
-    scanState.rawText='';
-    renderScanModal();
-    analyzeNutritionLabel(ev.target.result);
-  };
-  reader.readAsDataURL(file);
-}
-function loadTesseract(){
-  if(window.Tesseract)return Promise.resolve(window.Tesseract);
-  if(window.tesseractLoading)return window.tesseractLoading;
-  window.tesseractLoading=new Promise((resolve,reject)=>{
-    const script=document.createElement('script');
-    script.src='https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js';
-    script.crossOrigin='anonymous';
-    script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('OCR unavailable'));
-    script.onerror=()=>reject(new Error('OCR download failed'));
-    document.head.appendChild(script);
-  });
-  return window.tesseractLoading;
-}
-function ocrNumber(text,patterns){
-  for(const pattern of patterns){
-    const match=text.match(pattern);
-    if(match)return String(parseFloat(match[1].replace(',','.'))||0);
-  }
-  return'';
-}
-function parseNutritionLabel(raw){
-  const text=String(raw||'').replace(/[|]/g,'I').replace(/\r/g,'');
-  const lines=text.split('\n').map(x=>x.trim()).filter(Boolean);
-  const servingMatch=text.match(/(?:serving size|tama(?:ñ|n)o de (?:la )?porci(?:ó|o)n|porci(?:ó|o)n)\s*[:.]?\s*([^\n]{1,45})/i);
-  const ignored=/nutrition facts|datos nutricionales|informaci(?:ó|o)n nutricional|amount per serving|cantidad por porci(?:ó|o)n|calories|calor[ií]as/i;
-  const name=lines.find(line=>line.length>=3&&line.length<=60&&!ignored.test(line)&&!/^\d/.test(line))||'';
-  return{
-    name,
-    serving:servingMatch?servingMatch[1].trim():'',
-    kcal:ocrNumber(text,[/(?:calories|calor[ií]as)\s*[:.]?\s*(\d{1,4})/i,/(?:energy|energ[ií]a)\s*[:.]?\s*(\d{1,4})\s*kcal/i]),
-    protein:ocrNumber(text,[/(?:protein|prote[ií]na)\s*[:.]?\s*(\d+(?:[.,]\d+)?)\s*g/i]),
-    carbs:ocrNumber(text,[/(?:total carbohydrate|carbohidratos? totales?|carbohydrate|carbs?)\s*[:.]?\s*(\d+(?:[.,]\d+)?)\s*g/i]),
-    fat:ocrNumber(text,[/(?:total fat|grasa total|grasas? totales?)\s*[:.]?\s*(\d+(?:[.,]\d+)?)\s*g/i])
-  };
-}
-async function analyzeNutritionLabel(dataUrl){
-  try{
-    const Tesseract=await loadTesseract();
-    const result=await Tesseract.recognize(dataUrl,'eng+spa',{logger:message=>{
-      if(message.status==='recognizing text')scanState.progress=`Reconociendo texto… ${Math.round((message.progress||0)*100)}%`;
-      else if(message.status)scanState.progress=message.status;
-      const status=document.getElementById('ocr-status');
-      if(status)status.textContent=scanState.progress;
-    }});
-    const raw=result?.data?.text||'',parsed=parseNutritionLabel(raw);
-    scanState.rawText=raw.trim();
-    scanState.form={
-      name:parsed.name||scanState.form.name,
-      serving:parsed.serving||scanState.form.serving,
-      kcal:parsed.kcal||scanState.form.kcal,
-      protein:parsed.protein||scanState.form.protein,
-      carbs:parsed.carbs||scanState.form.carbs,
-      fat:parsed.fat||scanState.form.fat
-    };
-    scanState.scanning=false;
-    renderScanModal();
-    toast(scanState.rawText?'OCR completado — revisa los valores':'No se detectó texto — ingresa los valores manualmente');
-  }catch(error){
-    scanState.scanning=false;
-    scanState.progress='';
-    renderScanModal();
-    toast('OCR no disponible — ingresa los valores manualmente');
-  }
 }
 function saveScannedProduct(){
   const f=scanState.form;
@@ -1335,7 +1238,7 @@ function openLibraryModal(){
     <div class="modal-handle"></div>
     <div class="modal-title">Mi Librería Personal</div>
     <div class="modal-sub">${items.length} producto${items.length!==1?'s':''} guardado${items.length!==1?'s':''}</div>
-    ${items.length===0?`<div class="empty">Aún no tienes productos escaneados.<br>Usa el botón 📷 en cualquier comida para agregar.</div>`
+    ${items.length===0?`<div class="empty">Aún no tienes productos guardados.<br>Usa el botón ＋ Producto en cualquier comida para agregar.</div>`
     :items.map(([name,m])=>`<div class="lib-item">
       <div style="flex:1;min-width:0">
         <div class="lib-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(name)}</div>
@@ -1421,7 +1324,7 @@ function ingrPickerHTML(mi,si){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)">${i('su')}</div>
       <div style="display:flex;gap:6px">
-        <button onclick="event.stopPropagation();scanState.mealIdx=${mi};openScanModal(${mi})" style="padding:5px 10px;border-radius:8px;background:rgba(124,92,252,.12);border:1px solid rgba(124,92,252,.3);color:#7c5cfc;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer">📷 Escanear</button>
+        <button onclick="event.stopPropagation();scanState.mealIdx=${mi};openScanModal(${mi})" style="padding:5px 10px;border-radius:8px;background:rgba(124,92,252,.12);border:1px solid rgba(124,92,252,.3);color:#7c5cfc;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer">＋ Producto</button>
         <button onclick="event.stopPropagation();scanState.mealIdx=${mi};openLibraryModal()" style="padding:5px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer">📚 Librería</button>
       </div>
     </div>
