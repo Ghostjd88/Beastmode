@@ -1134,11 +1134,11 @@ function addCustomFood(mi){
   save();rMeals();toast('✓ '+nm+ ' '+i('add'));
 }
 
-let scanState={open:false,mealIdx:null,imgBase64:null,scanning:false,
+let scanState={open:false,mealIdx:null,imgBase64:null,scanning:false,progress:'',rawText:'',
   form:{name:'',serving:'',kcal:'',protein:'',carbs:'',fat:''}};
 
 function openScanModal(mi){
-  scanState={open:true,mealIdx:mi,imgBase64:null,scanning:false,
+  scanState={open:true,mealIdx:mi,imgBase64:null,scanning:false,progress:'',rawText:'',
     form:{name:'',serving:'100g',kcal:'',protein:'',carbs:'',fat:''}};
   renderScanModal();
 }
@@ -1160,8 +1160,9 @@ function renderScanModal(){
     <div class="modal-title">Agregar producto</div>
     <div class="modal-sub">Toma una foto como referencia y copia los valores de la etiqueta</div>
     ${scanState.imgBase64?`<img src="${scanState.imgBase64}" style="width:100%;border-radius:12px;margin-bottom:12px;max-height:200px;object-fit:cover">`:''}
+    ${scanState.scanning?`<div class="scanning-state"><div class="scan-spinner-big"></div><div id="ocr-status" role="status" style="font-size:14px;color:var(--text2);font-weight:500">${h(scanState.progress||'Preparando OCR…')}</div><div style="font-size:12px;color:var(--text3);margin-top:4px">El análisis ocurre solamente en este dispositivo</div></div>`:''}
     <input type="file" id="cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleImage(event)">
-    <button class="scan-btn" onclick="document.getElementById('cam-input').click()" aria-label="Tomar o elegir foto de la etiqueta">
+    <button class="scan-btn" ${scanState.scanning?'disabled':''} onclick="document.getElementById('cam-input').click()" aria-label="Tomar o elegir foto de la etiqueta">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
       ${scanState.imgBase64?i('cp2'):i('tp')}
     </button>
@@ -1178,6 +1179,7 @@ function renderScanModal(){
       <button class="scan-btn" id="save-scan-btn" onclick="collectAndSave()" style="margin-top:8px;${!hasName?'opacity:.45;':''}">
         💾 Guardar en mi librería + Agregar a comida
       </button>
+      ${scanState.rawText?`<details style="margin:10px 0 14px"><summary style="font-size:12px;color:var(--text3);cursor:pointer">Ver texto detectado</summary><pre style="white-space:pre-wrap;font-size:11px;color:var(--text2);background:var(--bg3);padding:10px;border-radius:8px;margin-top:8px;max-height:180px;overflow:auto">${h(scanState.rawText)}</pre></details>`:''}
       <button class="scan-btn secondary" onclick="closeScanModal()">${i('cn')}</button>
     </div>
   </div>`;
@@ -1215,9 +1217,77 @@ function handleImage(e){
   const reader=new FileReader();
   reader.onload=ev=>{
     scanState.imgBase64=ev.target.result;
+    scanState.scanning=true;
+    scanState.progress='Preparando OCR…';
+    scanState.rawText='';
     renderScanModal();
+    analyzeNutritionLabel(ev.target.result);
   };
   reader.readAsDataURL(file);
+}
+function loadTesseract(){
+  if(window.Tesseract)return Promise.resolve(window.Tesseract);
+  if(window.tesseractLoading)return window.tesseractLoading;
+  window.tesseractLoading=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js';
+    script.crossOrigin='anonymous';
+    script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('OCR unavailable'));
+    script.onerror=()=>reject(new Error('OCR download failed'));
+    document.head.appendChild(script);
+  });
+  return window.tesseractLoading;
+}
+function ocrNumber(text,patterns){
+  for(const pattern of patterns){
+    const match=text.match(pattern);
+    if(match)return String(parseFloat(match[1].replace(',','.'))||0);
+  }
+  return'';
+}
+function parseNutritionLabel(raw){
+  const text=String(raw||'').replace(/[|]/g,'I').replace(/\r/g,'');
+  const lines=text.split('\n').map(x=>x.trim()).filter(Boolean);
+  const servingMatch=text.match(/(?:serving size|tama(?:ñ|n)o de (?:la )?porci(?:ó|o)n|porci(?:ó|o)n)\s*[:.]?\s*([^\n]{1,45})/i);
+  const ignored=/nutrition facts|datos nutricionales|informaci(?:ó|o)n nutricional|amount per serving|cantidad por porci(?:ó|o)n|calories|calor[ií]as/i;
+  const name=lines.find(line=>line.length>=3&&line.length<=60&&!ignored.test(line)&&!/^\d/.test(line))||'';
+  return{
+    name,
+    serving:servingMatch?servingMatch[1].trim():'',
+    kcal:ocrNumber(text,[/(?:calories|calor[ií]as)\s*[:.]?\s*(\d{1,4})/i,/(?:energy|energ[ií]a)\s*[:.]?\s*(\d{1,4})\s*kcal/i]),
+    protein:ocrNumber(text,[/(?:protein|prote[ií]na)\s*[:.]?\s*(\d+(?:[.,]\d+)?)\s*g/i]),
+    carbs:ocrNumber(text,[/(?:total carbohydrate|carbohidratos? totales?|carbohydrate|carbs?)\s*[:.]?\s*(\d+(?:[.,]\d+)?)\s*g/i]),
+    fat:ocrNumber(text,[/(?:total fat|grasa total|grasas? totales?)\s*[:.]?\s*(\d+(?:[.,]\d+)?)\s*g/i])
+  };
+}
+async function analyzeNutritionLabel(dataUrl){
+  try{
+    const Tesseract=await loadTesseract();
+    const result=await Tesseract.recognize(dataUrl,'eng+spa',{logger:message=>{
+      if(message.status==='recognizing text')scanState.progress=`Reconociendo texto… ${Math.round((message.progress||0)*100)}%`;
+      else if(message.status)scanState.progress=message.status;
+      const status=document.getElementById('ocr-status');
+      if(status)status.textContent=scanState.progress;
+    }});
+    const raw=result?.data?.text||'',parsed=parseNutritionLabel(raw);
+    scanState.rawText=raw.trim();
+    scanState.form={
+      name:parsed.name||scanState.form.name,
+      serving:parsed.serving||scanState.form.serving,
+      kcal:parsed.kcal||scanState.form.kcal,
+      protein:parsed.protein||scanState.form.protein,
+      carbs:parsed.carbs||scanState.form.carbs,
+      fat:parsed.fat||scanState.form.fat
+    };
+    scanState.scanning=false;
+    renderScanModal();
+    toast(scanState.rawText?'OCR completado — revisa los valores':'No se detectó texto — ingresa los valores manualmente');
+  }catch(error){
+    scanState.scanning=false;
+    scanState.progress='';
+    renderScanModal();
+    toast('OCR no disponible — ingresa los valores manualmente');
+  }
 }
 function saveScannedProduct(){
   const f=scanState.form;
