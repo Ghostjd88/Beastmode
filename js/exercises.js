@@ -48,6 +48,7 @@ function renderExerciseGuide(){
       <div class="card" style="padding:12px;margin-bottom:12px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:5px">Muscles involved</div><div style="font-size:13px;color:var(--text2)">Primary: ${h(exercise.target)} · Supporting: ${h([exercise.muscleGroup,...exercise.secondaryMuscles].filter(Boolean).join(', '))}</div></div>
       <div style="display:flex;gap:6px;margin-bottom:10px"><button class="wpill ${lang==='en'?'active':''}" onclick="exerciseGuide.lang='en';renderExerciseGuide()">English</button><button class="wpill ${lang==='es'?'active':''}" onclick="exerciseGuide.lang='es';renderExerciseGuide()">Español</button></div>
       <div>${steps.map((step,index)=>`<div class="guide-step"><span class="guide-step-num">${index+1}</span><span>${h(step)}</span></div>`).join('')}</div>
+      <button class="scan-btn" onclick="addGuideExerciseToRoutine('${exercise.id}')">+ Add to ${h(activeCustomRoutine()?.name||'current workout')}</button>
       <div style="font-size:10px;color:var(--text3);margin-top:16px;text-align:center">Exercise text: hasaneyldrm/exercises-dataset · MIT License · Media intentionally excluded</div>
     </div>`;return;
   }

@@ -128,7 +128,7 @@ const DEF={workouts:{
     {day:'',exercises:'Lunges',reps:'4x12',notes:'+1 set'},
     {day:'',exercises:'Calf Raises',reps:'4x20',notes:'+reps'},
     {day:'Rest',exercises:'Full recovery',reps:'—',notes:'Prioritize sleep & hydration'},
-  ]},meals:[{name:'Comida 1 — Post Entreno',ingredients:['4 huevos','150g arroz cocido','100g repollo']},{name:'Comida 2 — Almuerzo',ingredients:['8oz pechuga de pollo','150g arroz cocido','150g repollo']},{name:'Cena',ingredients:['8oz carne molida 98/2','200g repollo']}],checklist:{},mealChecks:{},mealIngredients:{},progress:Array.from({length:8},(_,i)=>({week:i+1,weight:'',waist:'',energy:'',strength:'',notes:''})),habits:{},habitNames:['Entrenamiento','10k pasos / caminar','Comida limpia','Sin alcohol','Dormir 7+ horas'],activeMealDay:0,activeProgressWeek:0,theme:'light',userLibrary:{},activePhase:'fase1',userName:'',
+  ]},meals:[{name:'Comida 1 — Post Entreno',ingredients:['4 huevos','150g arroz cocido','100g repollo']},{name:'Comida 2 — Almuerzo',ingredients:['8oz pechuga de pollo','150g arroz cocido','150g repollo']},{name:'Cena',ingredients:['8oz carne molida 98/2','200g repollo']}],checklist:{},mealChecks:{},mealIngredients:{},progress:Array.from({length:8},(_,i)=>({week:i+1,weight:'',waist:'',energy:'',strength:'',notes:''})),habits:{},habitNames:['Entrenamiento','10k pasos / caminar','Comida limpia','Sin alcohol','Dormir 7+ horas'],activeMealDay:0,activeProgressWeek:0,theme:'light',userLibrary:{},activePhase:'fase1',userName:'',customRoutines:[],activeRoutineId:'',workoutLogs:[],activeWorkout:null,foodFavorites:[],recentFoods:[],dailyNutrition:{},
   body:{weight:'',goalWeight:'',heightFt:'',heightIn:'',age:'',sex:'male',activity:'moderate',kcalGoalMode:'auto',kcalGoalPick:null,kcalGoalManual:''}};
 let S=loadBeastmodeState(DEF);
 hydrateUserMacros();
@@ -398,7 +398,9 @@ function rBMI(){
       <button class="scan-btn secondary" onclick="document.getElementById('backup-input').click()" style="margin:0">Importar datos</button>
       <input id="backup-input" type="file" accept="application/json,.json" hidden onchange="importData(event)">
       ${backupStatusHTML()}
-    </div>`;
+    </div>
+    <div class="sec-label">Privacy & offline</div>
+    <div class="card settings-card">${securitySettingsHTML()}${pwaSettingsHTML()}</div>`;
   rBMIResults();
 }
 
@@ -636,4 +638,5 @@ function rDash(){
       <tfoot><tr class="totals-row"><td>Total</td>${Array.from({length:WK},(_,w)=>{const x=SS.reduce((s,n)=>s+(S.checklist[`${n}_w${w+1}`]?1:0),0);return`<td style="color:${x===SS.length?c.t:'var(--text2)'}"><b>${x}</b></td>`}).join('')}<td style="color:#7c5cfc"><b>${ts}</b></td></tr></tfoot>
     </table>
   </div>`;
+  if(typeof renderInsights==='function')renderInsights();
 }

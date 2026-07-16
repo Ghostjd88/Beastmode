@@ -4,11 +4,12 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const html=read('index.html'),css=read('css/styles.css');
-const modulePaths=['js/storage.js','js/app.js','js/workouts.js','js/exercises.js','js/nutrition.js','js/progress.js','js/bootstrap.js','js/browser-check.js'];
+const modulePaths=['js/storage.js','js/app.js','js/workouts.js','js/exercises.js','js/nutrition.js','js/progress.js','js/insights.js','js/security.js','js/pwa.js','js/bootstrap.js','js/browser-check.js'];
 const modules=Object.fromEntries(modulePaths.map(path=>[path,read(path)]));
 const script=modulePaths.map(path=>modules[path]).join('\n');
 const exerciseData=JSON.parse(read('data/exercises.min.json'));
 const exerciseLicense=read('data/EXERCISES-LICENSE.txt');
+const manifest=JSON.parse(read('manifest.webmanifest')),serviceWorker=read('service-worker.js');
 
 test('JavaScript modules parse',()=>modulePaths.forEach(path=>assert.doesNotThrow(()=>new Function(modules[path]),path)));
 test('index uses maintainable external modules',()=>{
@@ -35,7 +36,7 @@ test('browser-only secrets and broken AI calls are absent',()=>{
 });
 test('versioned storage, migrations and capacity protection are present',()=>{
   const storage=modules['js/storage.js'];
-  assert.match(storage,/BM_SCHEMA_VERSION=7/);
+  assert.match(storage,/BM_SCHEMA_VERSION=8/);
   assert.match(storage,/BM_LEGACY_KEYS=\['bm_v6','bm_v5'\]/);
   assert.match(storage,/function migrateState/);
   assert.match(storage,/QuotaExceededError/);
@@ -68,8 +69,13 @@ test('exercise guide dataset is complete and excludes restricted media',()=>{
   for(const exercise of exerciseData.exercises){assert.ok(exercise.id&&exercise.name&&exercise.bodyPart&&exercise.equipment&&exercise.target);assert.ok(exercise.instructions.en&&exercise.instructions.es);assert.ok(exercise.steps.en.length&&exercise.steps.es.length);assert.equal('image' in exercise,false);assert.equal('gif_url' in exercise,false)}
 });
 test('gym exposes searchable bilingual exercise details',()=>{
-  assert.match(modules['js/workouts.js'],/Exercise Guide · 1,324 movements/);assert.match(modules['js/exercises.js'],/function openExerciseGuide/);assert.match(modules['js/exercises.js'],/function exerciseGuideResults/);assert.match(modules['js/exercises.js'],/exerciseGuide\.lang='es'/);assert.match(modules['js/exercises.js'],/Media intentionally excluded/);
+  assert.match(modules['js/workouts.js'],/Exercise Guide · 1,324/);assert.match(modules['js/exercises.js'],/function openExerciseGuide/);assert.match(modules['js/exercises.js'],/function exerciseGuideResults/);assert.match(modules['js/exercises.js'],/exerciseGuide\.lang='es'/);assert.match(modules['js/exercises.js'],/Media intentionally excluded/);
 });
+test('workout builder logs sets, history and progressive overload',()=>{const workouts=modules['js/workouts.js'];for(const name of ['createRoutine','addGuideExerciseToRoutine','startWorkout','updateActiveSet','finishWorkout','previousExercisePerformance','progressionRecommendation'])assert.match(workouts,new RegExp(`function ${name}`));assert.match(workouts,/Workout in progress/);assert.match(workouts,/Recent workout history/)});
+test('nutrition supports favorites, recent foods, servings and daily history',()=>{const nutrition=modules['js/nutrition.js'];for(const name of ['toggleFoodFavorite','markFoodRecent','recordNutritionSnapshot','editLibraryProduct'])assert.match(nutrition,new RegExp(`function ${name}`));assert.match(nutrition,/Favorites & recent/);assert.match(nutrition,/serving/)});
+test('dashboard provides summaries, charts and personal records',()=>{const insights=modules['js/insights.js'];assert.match(insights,/Weekly coaching summary/);assert.match(insights,/Training volume/);assert.match(insights,/Calories/);assert.match(insights,/Personal records/)});
+test('optional PIN uses salted hashing and attempt cooldown',()=>{const security=modules['js/security.js'];assert.match(security,/crypto\.subtle\.digest\('SHA-256'/);assert.match(security,/crypto\.getRandomValues/);assert.match(security,/pinCooldownUntil/);assert.match(security,/does not encrypt browser storage/)});
+test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v8/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
 test('browser self-test covers core application surfaces',()=>{
   const selfTest=modules['js/browser-check.js'];
   for(const label of ['Versioned storage write','Backup validation','Workout rendering','Nutrition rendering','Progress validation','Exercise dataset'])assert.match(selfTest,new RegExp(label));

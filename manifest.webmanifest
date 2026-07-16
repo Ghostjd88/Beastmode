@@ -1,0 +1,12 @@
+{
+  "name":"BEASTMODE Personal Gym Tracker",
+  "short_name":"BEASTMODE",
+  "description":"Offline-first personal workout, nutrition, habit and progress tracker.",
+  "start_url":"./",
+  "scope":"./",
+  "display":"standalone",
+  "background_color":"#0f0f14",
+  "theme_color":"#146eb4",
+  "orientation":"portrait-primary",
+  "icons":[{"src":"./assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

@@ -1,4 +1,14 @@
 function calcMacros(ingredients){let kcal=0,p=0,cr=0,f=0;ingredients.forEach(ig=>{const m=MACROS[ig];if(m){kcal+=m.kcal;p+=m.p;cr+=m.c;f+=m.f}});return{kcal,p,cr,f}}
+function nutritionDateKey(){return nowGMT4().toISOString().slice(0,10)}
+function currentNutritionTotals(day=S.activeMealDay){const ingredients=S.meals.flatMap((meal,index)=>S.mealChecks[`m${index}_d${day}`]?(S.mealIngredients[index]||meal.ingredients):[]),totals=calcMacros(ingredients);return{kcal:totals.kcal,p:totals.p,c:totals.cr,f:totals.f}}
+function recordNutritionSnapshot(day=S.activeMealDay){if(day!==todayIdx())return;S.dailyNutrition[nutritionDateKey()]={...currentNutritionTotals(day),updatedAt:new Date().toISOString()}}
+function markFoodRecent(name){S.recentFoods=[name,...S.recentFoods.filter(item=>item!==name)].slice(0,20)}
+function toggleFoodFavorite(name,event){event?.stopPropagation();S.foodFavorites=S.foodFavorites.includes(name)?S.foodFavorites.filter(item=>item!==name):[name,...S.foodFavorites];save();rMeals();toast(S.foodFavorites.includes(name)?'Added to favorites ★':'Removed from favorites')}
+function setMealCheck(key,value,day=S.activeMealDay){S.mealChecks[key]=value;recordNutritionSnapshot(day);save();rMeals();toast(value?i('mdc'):i('un'))}
+function quickFoodsHTML(mi,selected){
+  const favorites=S.foodFavorites.filter(name=>MACROS[name]),recent=S.recentFoods.filter(name=>MACROS[name]&&!S.foodFavorites.includes(name)).slice(0,8),items=[...favorites.slice(0,8),...recent];if(!items.length)return'';
+  return`<div class="quick-foods"><div class="quick-food-label">Favorites & recent</div><div class="quick-food-list">${items.map(name=>`<button class="quick-food ${selected.includes(name)?'active':''}" onclick="tgI(${mi},decodeURIComponent('${enc(name)}'),event)">${S.foodFavorites.includes(name)?'★':'↻'} ${h(name)}</button>`).join('')}</div></div>`;
+}
 function donutSVG(p,cr,f,sz=140){const total=p*4+cr*4+f*9||1;const segs=[{v:p*4,color:'#4d9fff',label:i('prot')},{v:cr*4,color:'#ffb627',label:'Carbs'},{v:f*9,color:'#ff5252',label:i('fat')}];const r=44,cx=sz/2,cy=sz/2,circ=2*Math.PI*r;let offset=0;const arcs=segs.map(s=>{const dash=(s.v/total)*circ,gap=circ-dash,d=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="18" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="butt"/>`;offset+=dash;return d}).join('');return`<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">${arcs}<circle cx="${cx}" cy="${cy}" r="30" fill="var(--card)"/></svg>`}
 function macroCard(ingredients){const {kcal,p,cr,f}=calcMacros(ingredients);const total=p*4+cr*4+f*9||1;const pp=Math.round(p*4/total*100),cp=Math.round(cr*4/total*100),fp=Math.round(f*9/total*100);const c=C();
 if(kcal===0)return`<div class="card ca-teal" style="margin-bottom:12px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px">${i('md')}</div><div style="text-align:center;color:var(--text3);font-size:14px;padding:16px 0">${i('nm')}</div></div>`;
@@ -91,18 +101,20 @@ function addCustomFood(mi){
   if(!S.mealIngredients[mi])S.mealIngredients[mi]=[...S.meals[mi].ingredients];
   if(!S.mealIngredients[mi].includes(nm))S.mealIngredients[mi].push(nm);
   S.meals[mi].ingredients=S.mealIngredients[mi];
+  markFoodRecent(nm);recordNutritionSnapshot();
   searchSelected=null;
   document.getElementById('sq-'+mi).style.display='none';
   document.getElementById('sbin-'+mi).value='';
   save();rMeals();toast('✓ '+nm+ ' '+i('add'));
 }
 
-let scanState={open:false,mealIdx:null,
+let scanState={open:false,mealIdx:null,editingKey:'',
   form:{name:'',serving:'',kcal:'',protein:'',carbs:'',fat:''}};
 
-function openScanModal(mi){
-  scanState={open:true,mealIdx:mi,
-    form:{name:'',serving:'100g',kcal:'',protein:'',carbs:'',fat:''}};
+function openScanModal(mi,editingKey=''){
+  const current=S.userLibrary?.[editingKey];
+  scanState={open:true,mealIdx:mi,editingKey,
+    form:current?{name:editingKey,serving:current.serving||'1 porción',kcal:current.kcal||'',protein:current.p||'',carbs:current.c||'',fat:current.f||''}:{name:'',serving:'100g',kcal:'',protein:'',carbs:'',fat:''}};
   renderScanModal();
 }
 function closeScanModal(){
@@ -120,8 +132,8 @@ function renderScanModal(){
   const hasName=f.name&&f.name.trim().length>0;
   div.innerHTML=`<div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">Agregar producto</div>
-    <div class="modal-sub">Ingresa los valores de la etiqueta una sola vez y guárdalos en tu librería personal</div>
+    <div class="modal-title">${scanState.editingKey?'Edit product':'Agregar producto'}</div>
+    <div class="modal-sub">Save nutrition values and a reusable serving size in your personal library.</div>
     <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:10px">Datos del producto</div>
       <input class="scan-field" id="sf-name" aria-label="Nombre del producto" placeholder="Nombre del producto (ej: Avena Quaker)" value="${h(f.name)}">
@@ -169,7 +181,7 @@ function saveScannedProduct(){
   const key=f.name.trim();
   const values=[['kcal',f.kcal,100000],['protein',f.protein,10000],['carbs',f.carbs,10000],['fat',f.fat,10000]];
   for(const [field,value,max] of values){const number=Number(value||0);if(!Number.isFinite(number)||number<0||number>max){document.getElementById('sf-'+field)?.setAttribute('aria-invalid','true');toast('Nutrition values must be valid non-negative numbers');return}}
-  if(S.userLibrary?.[key]&&!confirm(`${key} already exists. Replace it?`))return;
+  if(S.userLibrary?.[key]&&key!==scanState.editingKey&&!confirm(`${key} already exists. Replace it?`))return;
   const entry={
     kcal:parseFloat(f.kcal)||0,
     p:parseFloat(f.protein)||0,
@@ -179,6 +191,8 @@ function saveScannedProduct(){
     addedAt:Date.now()
   };
   if(!S.userLibrary)S.userLibrary={};
+  const oldKey=scanState.editingKey;
+  if(oldKey&&oldKey!==key){delete S.userLibrary[oldKey];delete MACROS[oldKey];S.foodFavorites=S.foodFavorites.map(name=>name===oldKey?key:name);S.recentFoods=S.recentFoods.map(name=>name===oldKey?key:name);Object.values(S.mealIngredients).forEach(items=>{const index=items.indexOf(oldKey);if(index>=0)items[index]=key});S.meals.forEach(meal=>{meal.ingredients=meal.ingredients.map(name=>name===oldKey?key:name)})}
   S.userLibrary[key]=entry;
   MACROS[key]=entry;
   const mi=scanState.mealIdx;
@@ -187,14 +201,16 @@ function saveScannedProduct(){
     if(!S.mealIngredients[mi].includes(key))S.mealIngredients[mi].push(key);
     S.meals[mi].ingredients=S.mealIngredients[mi];
   }
+  markFoodRecent(key);recordNutritionSnapshot();
   save();
   closeScanModal();
   rMeals();
   toast('✓ '+key+' '+i('svl'));
 }
+function editLibraryProduct(key){document.getElementById('lib-modal')?.remove();openScanModal(scanState.mealIdx,key)}
 function deleteFromLibrary(key){
   if(!S.userLibrary)return;
-  delete S.userLibrary[key];
+  delete S.userLibrary[key];delete MACROS[key];S.foodFavorites=S.foodFavorites.filter(name=>name!==key);S.recentFoods=S.recentFoods.filter(name=>name!==key);Object.values(S.mealIngredients).forEach(items=>{const index=items.indexOf(key);if(index>=0)items.splice(index,1)});S.meals.forEach(meal=>meal.ingredients=meal.ingredients.filter(name=>name!==key));recordNutritionSnapshot();
   save();
   renderLibraryModal();
 }
@@ -217,6 +233,8 @@ function openLibraryModal(){
         <div class="lib-macros">🔥${Number(m.kcal)||0}kcal · P:${Number(m.p)||0}g · C:${Number(m.c)||0}g · G:${Number(m.f)||0}g · ${h(m.serving)}</div>
       </div>
       <div style="display:flex;gap:6px;margin-left:10px">
+        <button aria-label="Favorite ${h(name)}" onclick="toggleFoodFavorite(decodeURIComponent('${enc(name)}'),event);renderLibraryModal()" style="padding:7px;color:var(--amber);font-size:17px">${S.foodFavorites.includes(name)?'★':'☆'}</button>
+        <button aria-label="Edit ${h(name)}" onclick="editLibraryProduct(decodeURIComponent('${enc(name)}'))" style="padding:7px;color:var(--accent);font-size:13px">Edit</button>
         <button class="lib-add-btn" onclick="addLibItemToMeal(decodeURIComponent('${enc(name)}'),${scanState.mealIdx!=null?scanState.mealIdx:0});document.getElementById('lib-modal').remove()">+ Agregar</button>
         <button aria-label="Eliminar ${h(name)}" onclick="deleteFromLibrary(decodeURIComponent('${enc(name)}'));renderLibraryModal()" style="padding:7px 10px;border-radius:8px;background:var(--red-dim);color:var(--red);border:none;cursor:pointer;font-size:13px">✕</button>
       </div>
@@ -236,6 +254,7 @@ function addLibItemToMeal(name,mi){
   if(!S.mealIngredients[mealIdx])S.mealIngredients[mealIdx]=[...S.meals[mealIdx].ingredients];
   if(!S.mealIngredients[mealIdx].includes(name))S.mealIngredients[mealIdx].push(name);
   S.meals[mealIdx].ingredients=S.mealIngredients[mealIdx];
+  markFoodRecent(name);recordNutritionSnapshot();
   document.getElementById('lib-modal')?.remove();
   save();rMeals();toast('✓ '+name+ ' '+i('add'));
 }
@@ -251,6 +270,7 @@ function ingrPickerHTML(mi,si){
           <div class="ingr-label">${h(ig)}</div>
           <div style="font-size:11px;color:${sel?'var(--teal)':'var(--text3)'};margin-top:2px">${m.kcal} kcal · ${macro}</div>
         </div>
+        <button class="food-star" aria-label="Favorite ${h(ig)}" onclick="toggleFoodFavorite(decodeURIComponent('${enc(ig)}'),event)">${S.foodFavorites.includes(ig)?'★':'☆'}</button>
         <div class="ingr-check">${checkIcon}</div>
       </div>`;
     }).join('');
@@ -284,6 +304,7 @@ function ingrPickerHTML(mi,si){
               <div class="ingr-label">${h(ig)}</div>
               <div style="font-size:11px;color:#7c5cfc;margin-top:2px">${Number(m.kcal)||0} kcal · ${macro}${m.serving?' · '+h(m.serving):''}</div>
             </div>
+            <button class="food-star" aria-label="Favorite ${h(ig)}" onclick="toggleFoodFavorite(decodeURIComponent('${enc(ig)}'),event)">${S.foodFavorites.includes(ig)?'★':'☆'}</button>
             <div class="ingr-check" style="border-color:#7c5cfc;background:#7c5cfc">${checkIcon}</div>
           </div>`;
         }).join('')}
@@ -291,6 +312,7 @@ function ingrPickerHTML(mi,si){
     </div>`:'';
 
   return`<div style="margin-top:10px">
+    ${quickFoodsHTML(mi,si)}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)">${i('su')}</div>
       <div style="display:flex;gap:6px">
@@ -316,6 +338,7 @@ function ingrPickerHTML(mi,si){
 function rMeals(){
   syncDay();
   const c=C(),d=S.activeMealDay;
+  recordNutritionSnapshot(d);
   const allIngr=S.meals.flatMap((_,mi)=>S.mealChecks[`m${mi}_d${d}`]?(S.mealIngredients[mi]||S.meals[mi].ingredients):[]);
   document.getElementById('page-meals').innerHTML=
     `<div class="sec-label">${i('sd')}</div>
@@ -325,7 +348,7 @@ function rMeals(){
     <div class="card ca-teal">
       ${S.meals.map((m,mi)=>{
         const k=`m${mi}_d${d}`,dn=!!S.mealChecks[k],si=S.mealIngredients[`${mi}`]||m.ingredients;
-        return`<div class="meal-item ${dn?'meal-done':''}"><input type="checkbox" class="meal-check" aria-label="Marcar ${h(m.name)}" ${dn?'checked':''} onchange="S.mealChecks['${k}']=this.checked;save();rMeals();toast(this.checked?i('mdc'):i('un'))"><div class="meal-info" style="width:100%"><input class="meal-name-in" aria-label="Nombre de comida" value="${h(m.name)}" oninput="S.meals[${mi}].name=this.value;save()">${ingrPickerHTML(mi,si)}</div></div>`;
+        return`<div class="meal-item ${dn?'meal-done':''}"><input type="checkbox" class="meal-check" aria-label="Marcar ${h(m.name)}" ${dn?'checked':''} onchange="setMealCheck('${k}',this.checked,${d})"><div class="meal-info" style="width:100%"><input class="meal-name-in" aria-label="Nombre de comida" value="${h(m.name)}" oninput="S.meals[${mi}].name=this.value;save()">${ingrPickerHTML(mi,si)}</div></div>`;
       }).join('')}
       <button class="add-btn" onclick="S.meals.push({name:i('nm2'),ingredients:[]});save();rMeals()">+ Añadir comida</button>
     </div>
@@ -333,9 +356,9 @@ function rMeals(){
     <div class="card" style="overflow-x:auto">
       <table class="mwt" style="min-width:340px">
         <thead><tr><th>Comida</th>${DS.map(x=>`<th>${x}</th>`).join('')}<th>✓</th></tr></thead>
-        <tbody>${S.meals.map((m,mi)=>{const tot=DS.reduce((s,_,di)=>s+(S.mealChecks[`m${mi}_d${di}`]?1:0),0);return`<tr><td style="max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(m.name.split('—')[0].trim())}</td>${DS.map((_,di)=>`<td><input type="checkbox" aria-label="${h(m.name)} ${DS[di]}" ${S.mealChecks[`m${mi}_d${di}`]?'checked':''} onchange="S.mealChecks['m${mi}_d${di}']=this.checked;save();rMeals()"></td>`).join('')}<td><span class="mwtot" style="color:${tot===7?c.t:tot>=4?c.a:'var(--text3)'}">${tot}/7</span></td></tr>`}).join('')}</tbody>
+        <tbody>${S.meals.map((m,mi)=>{const tot=DS.reduce((s,_,di)=>s+(S.mealChecks[`m${mi}_d${di}`]?1:0),0);return`<tr><td style="max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(m.name.split('—')[0].trim())}</td>${DS.map((_,di)=>`<td><input type="checkbox" aria-label="${h(m.name)} ${DS[di]}" ${S.mealChecks[`m${mi}_d${di}`]?'checked':''} onchange="setMealCheck('m${mi}_d${di}',this.checked,${di})"></td>`).join('')}<td><span class="mwtot" style="color:${tot===7?c.t:tot>=4?c.a:'var(--text3)'}">${tot}/7</span></td></tr>`}).join('')}</tbody>
         <tfoot><tr class="totals-row"><td>Total</td>${DS.map((_,di)=>{const x=S.meals.reduce((s,_,mi)=>s+(S.mealChecks[`m${mi}_d${di}`]?1:0),0);return`<td style="color:${x===S.meals.length?c.t:'var(--text2)'}">${x}</td>`}).join('')}<td style="color:${c.t}"><b>${Object.values(S.mealChecks).filter(Boolean).length}</b></td></tr></tfoot>
       </table>
     </div>`;
 }
-function tgI(mi,ig,e){if(e)e.stopPropagation();if(!S.mealIngredients[mi])S.mealIngredients[mi]=[...S.meals[mi].ingredients];const a=S.mealIngredients[mi],i=a.indexOf(ig);if(i>=0)a.splice(i,1);else a.push(ig);S.meals[mi].ingredients=a;save();rMeals()}
+function tgI(mi,ig,e){if(e)e.stopPropagation();if(!S.mealIngredients[mi])S.mealIngredients[mi]=[...S.meals[mi].ingredients];const a=S.mealIngredients[mi],index=a.indexOf(ig);if(index>=0)a.splice(index,1);else{a.push(ig);markFoodRecent(ig)}S.meals[mi].ingredients=a;recordNutritionSnapshot();save();rMeals()}

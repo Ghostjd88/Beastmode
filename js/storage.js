@@ -1,4 +1,4 @@
-const BM_SCHEMA_VERSION=7;
+const BM_SCHEMA_VERSION=8;
 const BM_STORAGE_KEY='bm_state';
 const BM_AUTO_BACKUP_KEY='bm_auto_backup';
 const BM_ROLLBACK_KEY='bm_import_rollback';
@@ -33,6 +33,11 @@ function sanitizeWorkoutRows(rows,fallback){
   if(!Array.isArray(rows))return clone(fallback);
   return rows.slice(0,500).map(row=>({day:cleanText(row?.day,120),exercises:cleanText(row?.exercises,160),reps:cleanText(row?.reps,80),notes:cleanText(row?.notes,500)}));
 }
+function sanitizeRoutineExercise(item){return{id:cleanText(item?.id,100),name:cleanText(item?.name||item?.exercises,160),reps:cleanText(item?.reps||'3x10',80),notes:cleanText(item?.notes,500)}}
+function sanitizeWorkoutLog(log){
+  const exercises=Array.isArray(log?.exercises)?log.exercises.slice(0,100).map(exercise=>({name:cleanText(exercise?.name,160),target:cleanText(exercise?.target,80),notes:cleanText(exercise?.notes,500),sets:Array.isArray(exercise?.sets)?exercise.sets.slice(0,30).map(set=>({weight:Math.min(5000,Math.max(0,Number(set?.weight)||0)),reps:Math.min(1000,Math.max(0,Number(set?.reps)||0)),done:Boolean(set?.done)})):[]})).filter(exercise=>exercise.name):[];
+  return{id:cleanText(log?.id,100)||String(Date.now()),date:/^\d{4}-\d{2}-\d{2}$/.test(log?.date)?log.date:new Date().toISOString().slice(0,10),startedAt:cleanText(log?.startedAt,40),completedAt:cleanText(log?.completedAt,40),routineName:cleanText(log?.routineName,120),day:cleanText(log?.day,120),volume:Math.min(100000000,Math.max(0,Number(log?.volume)||0)),exercises};
+}
 function sanitizeState(input,defaults){
   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('El respaldo no contiene datos válidos.');
   const next=clone(defaults),body=input.body&&typeof input.body==='object'?input.body:{};
@@ -63,12 +68,21 @@ function sanitizeState(input,defaults){
   next.activePhase=['fase1','fase2','fase3'].includes(input.activePhase)?input.activePhase:'fase1';
   next.theme=input.theme==='dark'?'dark':'light';
   next.userName=cleanText(input.userName,80);
+  next.customRoutines=Array.isArray(input.customRoutines)?input.customRoutines.slice(0,50).map((routine,index)=>({id:cleanText(routine?.id,100)||`routine-${index+1}`,name:cleanText(routine?.name,120)||`Routine ${index+1}`,exercises:Array.isArray(routine?.exercises)?routine.exercises.slice(0,100).map(sanitizeRoutineExercise).filter(exercise=>exercise.name):[]})):[];
+  next.activeRoutineId=next.customRoutines.some(routine=>routine.id===input.activeRoutineId)?input.activeRoutineId:'';
+  next.workoutLogs=Array.isArray(input.workoutLogs)?input.workoutLogs.slice(-500).map(sanitizeWorkoutLog):[];
+  next.activeWorkout=input.activeWorkout&&typeof input.activeWorkout==='object'?sanitizeWorkoutLog(input.activeWorkout):null;
+  next.foodFavorites=Array.isArray(input.foodFavorites)?[...new Set(input.foodFavorites.map(item=>cleanText(item,160)).filter(Boolean))].slice(0,200):[];
+  next.recentFoods=Array.isArray(input.recentFoods)?[...new Set(input.recentFoods.map(item=>cleanText(item,160)).filter(Boolean))].slice(0,30):[];
+  next.dailyNutrition={};
+  for(const [date,value] of Object.entries(input.dailyNutrition&&typeof input.dailyNutrition==='object'&&!Array.isArray(input.dailyNutrition)?input.dailyNutrition:{}).slice(-365))if(/^\d{4}-\d{2}-\d{2}$/.test(date))next.dailyNutrition[date]={kcal:Math.max(0,Number(value?.kcal)||0),p:Math.max(0,Number(value?.p)||0),c:Math.max(0,Number(value?.c)||0),f:Math.max(0,Number(value?.f)||0),updatedAt:cleanText(value?.updatedAt,40)};
   return next;
 }
 function migrateState(input,fromVersion,defaults){
   const migrated=clone(input),version=Number(fromVersion)||5;
   if(version<6){if(!migrated.body)migrated.body={};if(!migrated.userLibrary)migrated.userLibrary={}}
   if(version<7){if(Array.isArray(migrated.workouts))migrated.workouts=clone(defaults.workouts);if(!migrated.mealIngredients||typeof migrated.mealIngredients!=='object')migrated.mealIngredients={}}
+  if(version<8){for(const key of ['customRoutines','workoutLogs','foodFavorites','recentFoods'])if(!Array.isArray(migrated[key]))migrated[key]=[];if(!migrated.dailyNutrition||typeof migrated.dailyNutrition!=='object')migrated.dailyNutrition={};if(!('activeWorkout'in migrated))migrated.activeWorkout=null}
   return sanitizeState(migrated,defaults);
 }
 function unwrapStored(raw){
