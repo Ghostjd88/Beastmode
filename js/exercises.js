@@ -1,10 +1,10 @@
-const exerciseGuide={data:null,query:'',body:'',equipment:'',selected:null,lang:'en',loading:false,error:''};
+const exerciseGuide={data:null,query:'',body:'',equipment:'',selected:null,lang:'en',loading:false,error:'',action:null};
 const guideNorm=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 async function loadExerciseGuide(){
   if(exerciseGuide.data||exerciseGuide.loading)return;
   exerciseGuide.loading=true;exerciseGuide.error='';renderExerciseGuide();
   try{
-    const response=await fetch('./data/exercises.min.json');
+    const response=await fetch('./data/exercises.min.json?v=9');
     if(!response.ok)throw new Error('Unable to load exercise data');
     const payload=await response.json();
     if(!Array.isArray(payload.exercises)||payload.exercises.length!==1324)throw new Error('Invalid exercise data');
@@ -12,9 +12,9 @@ async function loadExerciseGuide(){
   }catch(error){exerciseGuide.error='Exercise guide could not be loaded. Check your connection and try again.';}
   exerciseGuide.loading=false;renderExerciseGuide();
 }
-function openExerciseGuide(seed=''){
+function openExerciseGuide(seed='',action=null){
   exerciseGuide.query=String(seed||'').split(/[,/+&]/)[0].trim();
-  exerciseGuide.body='';exerciseGuide.equipment='';exerciseGuide.selected=null;exerciseGuide.lang='en';
+  exerciseGuide.body='';exerciseGuide.equipment='';exerciseGuide.selected=null;exerciseGuide.lang='en';exerciseGuide.action=action;
   document.getElementById('exercise-guide-modal')?.remove();
   const overlay=document.createElement('div');
   overlay.id='exercise-guide-modal';overlay.className='modal-overlay';
@@ -48,7 +48,7 @@ function renderExerciseGuide(){
       <div class="card" style="padding:12px;margin-bottom:12px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:5px">Muscles involved</div><div style="font-size:13px;color:var(--text2)">Primary: ${h(exercise.target)} · Supporting: ${h([exercise.muscleGroup,...exercise.secondaryMuscles].filter(Boolean).join(', '))}</div></div>
       <div style="display:flex;gap:6px;margin-bottom:10px"><button class="wpill ${lang==='en'?'active':''}" onclick="exerciseGuide.lang='en';renderExerciseGuide()">English</button><button class="wpill ${lang==='es'?'active':''}" onclick="exerciseGuide.lang='es';renderExerciseGuide()">Español</button></div>
       <div>${steps.map((step,index)=>`<div class="guide-step"><span class="guide-step-num">${index+1}</span><span>${h(step)}</span></div>`).join('')}</div>
-      <button class="scan-btn" onclick="addGuideExerciseToRoutine('${exercise.id}')">+ Add to ${h(activeCustomRoutine()?.name||'current workout')}</button>
+      ${exerciseGuide.action?.type==='replace'?`<button class="scan-btn" onclick="replaceActiveExercise(${Number(exerciseGuide.action.exerciseIndex)},'${exercise.id}')">Replace workout exercise</button>`:`<button class="scan-btn" onclick="addGuideExerciseToRoutine('${exercise.id}')">+ Add to ${h(activeCustomRoutine()?.name||'current workout')}</button>`}
       <div style="font-size:10px;color:var(--text3);margin-top:16px;text-align:center">Exercise text: hasaneyldrm/exercises-dataset · MIT License · Media intentionally excluded</div>
     </div>`;return;
   }

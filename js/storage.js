@@ -1,4 +1,4 @@
-const BM_SCHEMA_VERSION=8;
+const BM_SCHEMA_VERSION=9;
 const BM_STORAGE_KEY='bm_state';
 const BM_AUTO_BACKUP_KEY='bm_auto_backup';
 const BM_ROLLBACK_KEY='bm_import_rollback';
@@ -36,7 +36,7 @@ function sanitizeWorkoutRows(rows,fallback){
 function sanitizeRoutineExercise(item){return{id:cleanText(item?.id,100),name:cleanText(item?.name||item?.exercises,160),reps:cleanText(item?.reps||'3x10',80),notes:cleanText(item?.notes,500)}}
 function sanitizeWorkoutLog(log){
   const exercises=Array.isArray(log?.exercises)?log.exercises.slice(0,100).map(exercise=>({name:cleanText(exercise?.name,160),target:cleanText(exercise?.target,80),notes:cleanText(exercise?.notes,500),sets:Array.isArray(exercise?.sets)?exercise.sets.slice(0,30).map(set=>({weight:Math.min(5000,Math.max(0,Number(set?.weight)||0)),reps:Math.min(1000,Math.max(0,Number(set?.reps)||0)),done:Boolean(set?.done)})):[]})).filter(exercise=>exercise.name):[];
-  return{id:cleanText(log?.id,100)||String(Date.now()),date:/^\d{4}-\d{2}-\d{2}$/.test(log?.date)?log.date:new Date().toISOString().slice(0,10),startedAt:cleanText(log?.startedAt,40),completedAt:cleanText(log?.completedAt,40),routineName:cleanText(log?.routineName,120),day:cleanText(log?.day,120),volume:Math.min(100000000,Math.max(0,Number(log?.volume)||0)),exercises};
+  return{id:cleanText(log?.id,100)||String(Date.now()),date:/^\d{4}-\d{2}-\d{2}$/.test(log?.date)?log.date:new Date().toISOString().slice(0,10),startedAt:cleanText(log?.startedAt,40),completedAt:cleanText(log?.completedAt,40),routineName:cleanText(log?.routineName,120),day:cleanText(log?.day,120),volume:Math.min(100000000,Math.max(0,Number(log?.volume)||0)),durationSeconds:Math.min(86400,Math.max(0,Number(log?.durationSeconds)||0)),prCount:Math.min(100,Math.max(0,Number(log?.prCount)||0)),restTimerEnd:Math.max(0,Number(log?.restTimerEnd)||0),restSeconds:Math.min(600,Math.max(15,Number(log?.restSeconds)||90)),exercises};
 }
 function sanitizeState(input,defaults){
   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('El respaldo no contiene datos válidos.');
@@ -76,6 +76,9 @@ function sanitizeState(input,defaults){
   next.recentFoods=Array.isArray(input.recentFoods)?[...new Set(input.recentFoods.map(item=>cleanText(item,160)).filter(Boolean))].slice(0,30):[];
   next.dailyNutrition={};
   for(const [date,value] of Object.entries(input.dailyNutrition&&typeof input.dailyNutrition==='object'&&!Array.isArray(input.dailyNutrition)?input.dailyNutrition:{}).slice(-365))if(/^\d{4}-\d{2}-\d{2}$/.test(date))next.dailyNutrition[date]={kcal:Math.max(0,Number(value?.kcal)||0),p:Math.max(0,Number(value?.p)||0),c:Math.max(0,Number(value?.c)||0),f:Math.max(0,Number(value?.f)||0),updatedAt:cleanText(value?.updatedAt,40)};
+  next.workoutUnit=input.workoutUnit==='kg'?'kg':'lb';
+  next.restTimerSeconds=Math.min(600,Math.max(15,Number(input.restTimerSeconds)||90));
+  next.lastWorkoutSummaryId=cleanText(input.lastWorkoutSummaryId,100);
   return next;
 }
 function migrateState(input,fromVersion,defaults){
@@ -83,6 +86,7 @@ function migrateState(input,fromVersion,defaults){
   if(version<6){if(!migrated.body)migrated.body={};if(!migrated.userLibrary)migrated.userLibrary={}}
   if(version<7){if(Array.isArray(migrated.workouts))migrated.workouts=clone(defaults.workouts);if(!migrated.mealIngredients||typeof migrated.mealIngredients!=='object')migrated.mealIngredients={}}
   if(version<8){for(const key of ['customRoutines','workoutLogs','foodFavorites','recentFoods'])if(!Array.isArray(migrated[key]))migrated[key]=[];if(!migrated.dailyNutrition||typeof migrated.dailyNutrition!=='object')migrated.dailyNutrition={};if(!('activeWorkout'in migrated))migrated.activeWorkout=null}
+  if(version<9){migrated.workoutUnit='lb';migrated.restTimerSeconds=90;migrated.lastWorkoutSummaryId=''}
   return sanitizeState(migrated,defaults);
 }
 function unwrapStored(raw){

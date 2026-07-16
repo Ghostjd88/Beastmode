@@ -36,7 +36,7 @@ test('browser-only secrets and broken AI calls are absent',()=>{
 });
 test('versioned storage, migrations and capacity protection are present',()=>{
   const storage=modules['js/storage.js'];
-  assert.match(storage,/BM_SCHEMA_VERSION=8/);
+  assert.match(storage,/BM_SCHEMA_VERSION=9/);
   assert.match(storage,/BM_LEGACY_KEYS=\['bm_v6','bm_v5'\]/);
   assert.match(storage,/function migrateState/);
   assert.match(storage,/QuotaExceededError/);
@@ -72,12 +72,13 @@ test('gym exposes searchable bilingual exercise details',()=>{
   assert.match(modules['js/workouts.js'],/Exercise Guide · 1,324/);assert.match(modules['js/exercises.js'],/function openExerciseGuide/);assert.match(modules['js/exercises.js'],/function exerciseGuideResults/);assert.match(modules['js/exercises.js'],/exerciseGuide\.lang='es'/);assert.match(modules['js/exercises.js'],/Media intentionally excluded/);
 });
 test('workout builder logs sets, history and progressive overload',()=>{const workouts=modules['js/workouts.js'];for(const name of ['createRoutine','addGuideExerciseToRoutine','startWorkout','updateActiveSet','finishWorkout','previousExercisePerformance','progressionRecommendation'])assert.match(workouts,new RegExp(`function ${name}`));assert.match(workouts,/Workout in progress/);assert.match(workouts,/Recent workout history/)});
+test('mobile workout flow supports timers, recovery, routine controls, substitutions and units',()=>{const workouts=modules['js/workouts.js'];for(const name of ['duplicateActiveRoutine','moveActiveRoutine','moveRoutineExercise','openExerciseSubstitution','replaceActiveExercise','startRestTimer','adjustRestTimer','stopRestTimer','initWorkoutFlow','setWorkoutUnit','workoutSummaryHTML'])assert.match(workouts,new RegExp(`function ${name}`));assert.match(workouts,/Session safely saved/);assert.match(workouts,/Workout complete/);assert.match(workouts,/navigator\.vibrate/);assert.match(modules['js/exercises.js'],/Replace workout exercise/)});
 test('nutrition supports favorites, recent foods, servings and daily history',()=>{const nutrition=modules['js/nutrition.js'];for(const name of ['toggleFoodFavorite','markFoodRecent','recordNutritionSnapshot','editLibraryProduct'])assert.match(nutrition,new RegExp(`function ${name}`));assert.match(nutrition,/Favorites & recent/);assert.match(nutrition,/serving/)});
 test('dashboard provides summaries, charts and personal records',()=>{const insights=modules['js/insights.js'];assert.match(insights,/Weekly coaching summary/);assert.match(insights,/Training volume/);assert.match(insights,/Calories/);assert.match(insights,/Personal records/)});
 test('optional PIN uses salted hashing and attempt cooldown',()=>{const security=modules['js/security.js'];assert.match(security,/crypto\.subtle\.digest\('SHA-256'/);assert.match(security,/crypto\.getRandomValues/);assert.match(security,/pinCooldownUntil/);assert.match(security,/does not encrypt browser storage/)});
-test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v8/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
+test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v9/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
 test('browser self-test covers core application surfaces',()=>{
   const selfTest=modules['js/browser-check.js'];
-  for(const label of ['Versioned storage write','Backup validation','Workout rendering','Nutrition rendering','Progress validation','Exercise dataset'])assert.match(selfTest,new RegExp(label));
+  for(const label of ['Versioned storage write','Backup validation','Workout rendering','Mobile workout flow','Nutrition rendering','Progress validation','Exercise dataset'])assert.match(selfTest,new RegExp(label));
   assert.match(selfTest,/self-test-report/);
 });

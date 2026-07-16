@@ -129,6 +129,7 @@ const DEF={workouts:{
     {day:'',exercises:'Calf Raises',reps:'4x20',notes:'+reps'},
     {day:'Rest',exercises:'Full recovery',reps:'—',notes:'Prioritize sleep & hydration'},
   ]},meals:[{name:'Comida 1 — Post Entreno',ingredients:['4 huevos','150g arroz cocido','100g repollo']},{name:'Comida 2 — Almuerzo',ingredients:['8oz pechuga de pollo','150g arroz cocido','150g repollo']},{name:'Cena',ingredients:['8oz carne molida 98/2','200g repollo']}],checklist:{},mealChecks:{},mealIngredients:{},progress:Array.from({length:8},(_,i)=>({week:i+1,weight:'',waist:'',energy:'',strength:'',notes:''})),habits:{},habitNames:['Entrenamiento','10k pasos / caminar','Comida limpia','Sin alcohol','Dormir 7+ horas'],activeMealDay:0,activeProgressWeek:0,theme:'light',userLibrary:{},activePhase:'fase1',userName:'',customRoutines:[],activeRoutineId:'',workoutLogs:[],activeWorkout:null,foodFavorites:[],recentFoods:[],dailyNutrition:{},
+  workoutUnit:'lb',restTimerSeconds:90,lastWorkoutSummaryId:'',
   body:{weight:'',goalWeight:'',heightFt:'',heightIn:'',age:'',sex:'male',activity:'moderate',kcalGoalMode:'auto',kcalGoalPick:null,kcalGoalManual:''}};
 let S=loadBeastmodeState(DEF);
 hydrateUserMacros();
