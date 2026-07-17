@@ -4,7 +4,7 @@ async function loadExerciseGuide(){
   if(exerciseGuide.data||exerciseGuide.loading)return;
   exerciseGuide.loading=true;exerciseGuide.error='';renderExerciseGuide();
   try{
-    const response=await fetch('./data/exercises.min.json?v=10');
+    const response=await fetch('./data/exercises.min.json?v=11');
     if(!response.ok)throw new Error('Unable to load exercise data');
     const payload=await response.json();
     if(!Array.isArray(payload.exercises)||payload.exercises.length!==1324)throw new Error('Invalid exercise data');

@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const html=read('index.html'),css=read('css/styles.css'),forged=read('css/forged.css');
-const modulePaths=['js/storage.js','js/app.js','js/workouts.js','js/exercises.js','js/nutrition.js','js/progress.js','js/insights.js','js/security.js','js/pwa.js','js/bootstrap.js','js/browser-check.js'];
+const modulePaths=['js/storage.js','js/app.js','js/workouts.js','js/exercises.js','js/nutrition.js','js/progress.js','js/insights.js','js/security.js','js/pwa.js','js/accessibility.js','js/bootstrap.js','js/browser-check.js'];
 const modules=Object.fromEntries(modulePaths.map(path=>[path,read(path)]));
 const script=modulePaths.map(path=>modules[path]).join('\n');
 const exerciseData=JSON.parse(read('data/exercises.min.json'));
@@ -31,6 +31,10 @@ test('accessibility safeguards are present',()=>{
   assert.match(css,/focus-visible/);
   assert.equal((html.match(/class="nav-btn/g)||[]).length,(html.match(/class="nav-btn[^>]*aria-label=/g)||[]).length);
   assert.match(script,/aria-invalid/);
+  assert.match(html,/role="status" aria-live="polite"/);
+  const accessibility=modules['js/accessibility.js'];
+  for(const feature of ['ensurePageHeading','enhanceDialog','trapDialogFocus','aria-modal','Escape'])assert.match(accessibility,new RegExp(feature));
+  assert.match(forged,/\.sr-only/);assert.match(forged,/min-height:44px/);assert.match(forged,/max-width:420px/);assert.match(forged,/white-space:normal/);
 });
 test('browser-only secrets and broken AI calls are absent',()=>{
   assert.doesNotMatch(script,/api\.anthropic\.com|claude-sonnet|swIXJ6/);
@@ -78,9 +82,9 @@ test('mobile workout flow supports timers, recovery, routine controls, substitut
 test('nutrition supports favorites, recent foods, servings and daily history',()=>{const nutrition=modules['js/nutrition.js'];for(const name of ['toggleFoodFavorite','markFoodRecent','recordNutritionSnapshot','editLibraryProduct'])assert.match(nutrition,new RegExp(`function ${name}`));assert.match(nutrition,/Favorites & recent/);assert.match(nutrition,/serving/)});
 test('dashboard provides summaries, charts and personal records',()=>{const insights=modules['js/insights.js'];assert.match(insights,/Weekly coaching summary/);assert.match(insights,/Training volume/);assert.match(insights,/Calories/);assert.match(insights,/Personal records/)});
 test('optional PIN uses salted hashing and attempt cooldown',()=>{const security=modules['js/security.js'];assert.match(security,/crypto\.subtle\.digest\('SHA-256'/);assert.match(security,/crypto\.getRandomValues/);assert.match(security,/pinCooldownUntil/);assert.match(security,/does not encrypt browser storage/)});
-test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v10/);assert.match(serviceWorker,/css\/forged\.css/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
+test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v11/);assert.match(serviceWorker,/css\/forged\.css/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
 test('browser self-test covers core application surfaces',()=>{
   const selfTest=modules['js/browser-check.js'];
-  for(const label of ['Versioned storage write','Backup validation','Workout rendering','Mobile workout flow','Nutrition rendering','Progress validation','Exercise dataset'])assert.match(selfTest,new RegExp(label));
+  for(const label of ['Accessible interaction shell','Versioned storage write','Backup validation','Workout rendering','Mobile workout flow','Nutrition rendering','Progress validation','Exercise dataset'])assert.match(selfTest,new RegExp(label));
   assert.match(selfTest,/self-test-report/);
 });
