@@ -324,7 +324,7 @@ function rBMIResults(){
 
       ${mode==='manual'?`<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Escribe tu meta de calorías diarias:</div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <input id="kcal-manual-in" type="number" value="${b.kcalGoalManual||''}" placeholder="ej: 2200"
+        <input id="kcal-manual-in" type="number" aria-label="Daily calorie goal" value="${b.kcalGoalManual||''}" placeholder="ej: 2200"
           min="500" max="10000" inputmode="numeric" oninput="updateBodyDraft('kcalGoalManual',this)" onchange="commitBodyField('kcalGoalManual',this)"
           style="flex:1;padding:12px 14px;border-radius:10px;border:1.5px solid ${c.b};background:var(--bg3);font-size:28px;font-weight:800;font-family:'Barlow Condensed',sans-serif;color:${c.b};outline:none;text-align:center">
         <span style="font-size:14px;color:var(--text3);white-space:nowrap">kcal / día</span>
@@ -333,7 +333,7 @@ function rBMIResults(){
       ${activeGoal?`<div style="margin-top:${mode==='auto'?'12':'14'}px;padding:12px 14px;border-radius:10px;background:${c.t}14;border:1px solid ${c.t}40;display:flex;align-items:center;justify-content:space-between">
         <div style="font-size:13px;color:var(--text2);font-weight:500">✅ Meta activa en dashboard</div>
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:${c.t}">${Math.round(activeGoal).toLocaleString()} <span style="font-size:13px;opacity:.7">kcal</span></div>
-      </div>`:''}
+      </div><button class="scan-btn meal-plan-launch" onclick="openStarterMealPlan()">Build starter meal plan</button>`:''}
     </div>
 
     ${tdee&&mode!=='pick'?`<div class="sec-label">${i('rt')}</div>
