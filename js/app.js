@@ -129,7 +129,7 @@ const DEF={workouts:{
     {day:'',exercises:'Lunges',reps:'4x12',notes:'+1 set'},
     {day:'',exercises:'Calf Raises',reps:'4x20',notes:'+reps'},
     {day:'Rest',exercises:'Full recovery',reps:'—',notes:'Prioritize sleep & hydration'},
-  ]},meals:[{name:'Comida 1 — Post Entreno',ingredients:['4 huevos','150g arroz cocido','100g repollo']},{name:'Comida 2 — Almuerzo',ingredients:['8oz pechuga de pollo','150g arroz cocido','150g repollo']},{name:'Cena',ingredients:['8oz carne molida 98/2','200g repollo']}],checklist:{},mealChecks:{},mealIngredients:{},progress:Array.from({length:8},(_,i)=>({week:i+1,weight:'',waist:'',energy:'',strength:'',notes:''})),habits:{},habitNames:['Entrenamiento','10k pasos / caminar','Comida limpia','Sin alcohol','Dormir 7+ horas'],activeMealDay:0,activeProgressWeek:0,theme:'dark',userLibrary:{},activePhase:'fase1',userName:'',customRoutines:[],activeRoutineId:'',workoutLogs:[],activeWorkout:null,foodFavorites:[],recentFoods:[],dailyNutrition:{},
+  ]},meals:[{name:'Breakfast',ingredients:[]},{name:'Lunch',ingredients:[]},{name:'Dinner',ingredients:[]}],checklist:{},mealChecks:{},mealIngredients:{},progress:Array.from({length:8},(_,i)=>({week:i+1,weight:'',waist:'',energy:'',strength:'',notes:''})),habits:{},habitNames:['Entrenamiento','10k pasos / caminar','Comida limpia','Sin alcohol','Dormir 7+ horas'],activeMealDay:0,activeProgressWeek:0,theme:'dark',userLibrary:{},activePhase:'fase1',userName:'',customRoutines:[],activeRoutineId:'',workoutLogs:[],activeWorkout:null,foodFavorites:[],recentFoods:[],dailyNutrition:{},
   workoutUnit:'lb',restTimerSeconds:90,lastWorkoutSummaryId:'',
   body:{weight:'',goalWeight:'',heightFt:'',heightIn:'',age:'',sex:'male',activity:'moderate',kcalGoalMode:'auto',kcalGoalPick:null,kcalGoalManual:''}};
 let S=loadBeastmodeState(DEF);
@@ -325,7 +325,7 @@ function rBMIResults(){
       ${mode==='manual'?`<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Escribe tu meta de calorías diarias:</div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <input id="kcal-manual-in" type="number" aria-label="Daily calorie goal" value="${b.kcalGoalManual||''}" placeholder="ej: 2200"
-          min="500" max="10000" inputmode="numeric" oninput="updateBodyDraft('kcalGoalManual',this)" onchange="commitBodyField('kcalGoalManual',this)"
+          min="500" max="10000" inputmode="numeric" oninput="updateBodyDraft('kcalGoalManual',this,false)" onchange="commitBodyField('kcalGoalManual',this)"
           style="flex:1;padding:12px 14px;border-radius:10px;border:1.5px solid ${c.b};background:var(--bg3);font-size:28px;font-weight:800;font-family:'Barlow Condensed',sans-serif;color:${c.b};outline:none;text-align:center">
         <span style="font-size:14px;color:var(--text3);white-space:nowrap">kcal / día</span>
       </div>`:''}
@@ -414,15 +414,7 @@ function rDash(){
   // sync meal day to today (GMT-4)
   syncDay();
   const todayD=S.activeMealDay;
-  // macros only from ingredients of meals that are checked today OR all selected ingredients for today
-  let totalKcal=0,totalP=0,totalCarbs=0,totalFat=0;
-  S.meals.forEach((_,mi)=>{
-    const k=`m${mi}_d${todayD}`;
-    if(S.mealChecks[k]){
-      const ingrs=S.mealIngredients[mi]||S.meals[mi].ingredients;
-      ingrs.forEach(ig=>{const m=MACROS[ig];if(m){totalKcal+=m.kcal||0;totalP+=m.p||0;totalCarbs+=m.c||0;totalFat+=m.f||0;}});
-    }
-  });
+  const nutritionTotals=currentNutritionTotals(todayD),totalKcal=wholeMacro(nutritionTotals.kcal),totalP=wholeMacro(nutritionTotals.p),totalCarbs=wholeMacro(nutritionTotals.c),totalFat=wholeMacro(nutritionTotals.f);
   // sessions & habits
   const ts=Object.values(S.checklist).filter(Boolean).length,ms=SS.length*WK;
   const hc=Object.values(S.habits).filter(Boolean).length,mh=S.habitNames.length*7;

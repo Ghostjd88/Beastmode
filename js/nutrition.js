@@ -1,28 +1,34 @@
-function calcMacros(ingredients){let kcal=0,p=0,cr=0,f=0;ingredients.forEach(ig=>{const m=MACROS[ig];if(m){kcal+=m.kcal;p+=m.p;cr+=m.c;f+=m.f}});return{kcal,p,cr,f}}
+function calcMacros(ingredients){let kcal=0,p=0,cr=0,f=0;ingredients.forEach(ig=>{const m=MACROS[ig];if(m){kcal+=Number(m.kcal)||0;p+=Number(m.p)||0;cr+=Number(m.c)||0;f+=Number(m.f)||0}});return{kcal,p,cr,f}}
+const wholeMacro=value=>Math.round(Number(value)||0);
 const STARTER_PLAN_PREFIX='Starter · ';
 const STARTER_PLAN_FOODS={
-  oats:{label:'Oats',kcal:389,p:16.9,c:66.3,f:6.9},eggs:{label:'Whole eggs',kcal:143,p:12.6,c:.7,f:9.5},banana:{label:'Banana',kcal:89,p:1.1,c:22.8,f:.3},yogurt:{label:'Greek yogurt',kcal:59,p:10.3,c:3.6,f:.4},
+  oats:{label:'Oats',kcal:389,p:16.9,c:66.3,f:6.9},eggs:{label:'Whole eggs',kcal:143,p:12.6,c:.7,f:9.5},eggWhites:{label:'Egg whites',kcal:52,p:10.9,c:.7,f:.2},banana:{label:'Banana',kcal:89,p:1.1,c:22.8,f:.3},yogurt:{label:'Greek yogurt',kcal:59,p:10.3,c:3.6,f:.4},
   chicken:{label:'Chicken breast',kcal:165,p:31,c:0,f:3.6},rice:{label:'Cooked rice',kcal:130,p:2.7,c:28,f:.3},broccoli:{label:'Broccoli',kcal:35,p:2.4,c:7.2,f:.4},oil:{label:'Olive oil',kcal:884,p:0,c:0,f:100},
   beef:{label:'Lean ground beef',kcal:200,p:26,c:0,f:10},sweetPotato:{label:'Sweet potato',kcal:86,p:1.6,c:20.1,f:.1},cabbage:{label:'Cabbage',kcal:25,p:1.3,c:5.8,f:.1},almonds:{label:'Almonds',kcal:579,p:21.2,c:21.6,f:49.9}
 };
-const STARTER_PLAN_TEMPLATES=[
-  {name:'Breakfast',ratio:.25,flex:'oats',items:[['oats',60],['eggs',100],['banana',100],['yogurt',50]]},
-  {name:'Lunch',ratio:.35,flex:'rice',items:[['chicken',180],['rice',250],['broccoli',150],['oil',3]]},
-  {name:'Dinner',ratio:.30,flex:'sweetPotato',items:[['beef',170],['sweetPotato',220],['cabbage',150],['oil',4]]},
-  {name:'Snack',ratio:.10,flex:'yogurt',items:[['yogurt',200],['banana',50],['almonds',7]]}
-];
+const STARTER_PLAN_PROFILES={
+  balanced:{label:'Balanced',description:'Balanced protein, carbs and fats',templates:[{name:'Breakfast',ratio:.25,flex:'oats',items:[['oats',60],['eggs',100],['banana',100],['yogurt',50]]},{name:'Lunch',ratio:.35,flex:'rice',items:[['chicken',180],['rice',250],['broccoli',150],['oil',3]]},{name:'Dinner',ratio:.30,flex:'sweetPotato',items:[['beef',170],['sweetPotato',220],['cabbage',150],['oil',4]]},{name:'Snack',ratio:.10,flex:'yogurt',items:[['yogurt',200],['banana',50],['almonds',7]]}]},
+  highCarb:{label:'High carb / low fat',description:'More rice, oats, fruit and potatoes',templates:[{name:'Breakfast',ratio:.25,flex:'oats',items:[['oats',80],['eggWhites',180],['banana',150],['yogurt',100]]},{name:'Lunch',ratio:.35,flex:'rice',items:[['chicken',150],['rice',300],['broccoli',150],['oil',2]]},{name:'Dinner',ratio:.30,flex:'sweetPotato',items:[['chicken',150],['sweetPotato',300],['cabbage',150],['rice',100]]},{name:'Snack',ratio:.10,flex:'yogurt',items:[['yogurt',250],['banana',100],['oats',20]]}]},
+  highProtein:{label:'High protein / low carb',description:'More lean protein with fewer starches',templates:[{name:'Breakfast',ratio:.25,flex:'yogurt',items:[['eggs',150],['yogurt',250],['almonds',20],['banana',50]]},{name:'Lunch',ratio:.35,flex:'chicken',items:[['chicken',250],['broccoli',200],['oil',15],['rice',70]]},{name:'Dinner',ratio:.30,flex:'beef',items:[['beef',250],['cabbage',200],['broccoli',150],['oil',5]]},{name:'Snack',ratio:.10,flex:'yogurt',items:[['yogurt',300],['almonds',25],['banana',30]]}]},
+  highFat:{label:'High fat / low carb',description:'More eggs, almonds, olive oil and beef',templates:[{name:'Breakfast',ratio:.25,flex:'eggs',items:[['eggs',200],['almonds',35],['yogurt',150]]},{name:'Lunch',ratio:.35,flex:'beef',items:[['beef',250],['broccoli',200],['oil',15]]},{name:'Dinner',ratio:.30,flex:'chicken',items:[['chicken',200],['cabbage',150],['almonds',25],['oil',15]]},{name:'Snack',ratio:.10,flex:'yogurt',items:[['yogurt',200],['almonds',30],['oil',5]]}]}
+};
 let starterPlanPreview=null;
 function starterFoodPortion(id,grams){const food=STARTER_PLAN_FOODS[id],ratio=grams/100;return{id,label:food.label,grams,kcal:Math.round(food.kcal*ratio),p:Math.round(food.p*ratio*10)/10,c:Math.round(food.c*ratio*10)/10,f:Math.round(food.f*ratio*10)/10}}
 function scaleStarterMeal(template,targetKcal){const base=template.items.reduce((sum,[id,grams])=>sum+STARTER_PLAN_FOODS[id].kcal*grams/100,0),scaled=template.items.map(([id,grams])=>[id,Math.max(1,Math.round(grams*targetKcal/base))]);let items=scaled.map(([id,grams])=>starterFoodPortion(id,grams)),difference=targetKcal-items.reduce((sum,item)=>sum+item.kcal,0),flexIndex=scaled.findIndex(([id])=>id===template.flex);if(flexIndex>=0&&difference){const [id,grams]=scaled[flexIndex],adjusted=Math.max(1,grams+Math.round(difference/(STARTER_PLAN_FOODS[id].kcal/100)));scaled[flexIndex]=[id,adjusted];items=scaled.map(([foodId,foodGrams])=>starterFoodPortion(foodId,foodGrams))}return{name:template.name,targetKcal,items}}
-function buildStarterMealPlan(goal){const calories=Math.round(Number(goal));if(!Number.isFinite(calories)||calories<500||calories>10000)throw new Error('Choose a daily calorie goal between 500 and 10,000');let assigned=0;const meals=STARTER_PLAN_TEMPLATES.map((template,index)=>{const target=index===STARTER_PLAN_TEMPLATES.length-1?calories-assigned:Math.round(calories*template.ratio);assigned+=target;return scaleStarterMeal(template,target)});return{goal:calories,meals}}
+function buildStarterMealPlan(goal,style='balanced'){const calories=Math.round(Number(goal)),profile=STARTER_PLAN_PROFILES[style];if(!Number.isFinite(calories)||calories<500||calories>10000)throw new Error('Choose a daily calorie goal between 500 and 10,000');if(!profile)throw new Error('Choose a valid meal plan style');let assigned=0;const meals=profile.templates.map((template,index)=>{const target=index===profile.templates.length-1?calories-assigned:Math.round(calories*template.ratio);assigned+=target;return scaleStarterMeal(template,target)});return{goal:calories,style,profile:{label:profile.label,description:profile.description},meals}}
 function starterPlanTotals(plan){return plan.meals.flatMap(meal=>meal.items).reduce((totals,item)=>({kcal:totals.kcal+item.kcal,p:Math.round((totals.p+item.p)*10)/10,c:Math.round((totals.c+item.c)*10)/10,f:Math.round((totals.f+item.f)*10)/10}),{kcal:0,p:0,c:0,f:0})}
+function starterPlanShares(plan){const totals=starterPlanTotals(plan),energy=totals.p*4+totals.c*4+totals.f*9||1;return{p:Math.round(totals.p*4/energy*100),c:Math.round(totals.c*4/energy*100),f:Math.round(totals.f*9/energy*100)}}
 function starterPlanItemKey(meal,item){return`${STARTER_PLAN_PREFIX}${meal} · ${item.label} · ${item.grams}g`}
 function starterPlanCardHTML(){const goal=getKcalGoal(),generated=Object.entries(S.userLibrary||{}).filter(([name])=>name.startsWith(STARTER_PLAN_PREFIX)),generatedKcal=generated.reduce((sum,[,item])=>sum+(Number(item.kcal)||0),0);return`<div class="meal-plan-card"><div class="meal-plan-head"><div><div class="meal-plan-kicker">LOCAL MEAL BUILDER</div><div class="meal-plan-title">Starter meal plan</div><div class="meal-plan-copy">A simple four-meal baseline you can edit after generating.</div></div>${goal?`<div class="meal-plan-goal"><strong>${Math.round(goal).toLocaleString()}</strong><span>kcal goal</span></div>`:''}</div>${generated.length?`<div class="meal-plan-current">Current generated plan · ${generatedKcal.toLocaleString()} kcal</div>`:''}<button class="scan-btn meal-plan-button" onclick="${goal?'openStarterMealPlan()':`document.querySelector('.nav-btn[aria-label=&quot;BMI&quot;]').click()`}">${goal?'Preview starter plan':'Set a calorie goal first'}</button></div>`}
-function openStarterMealPlan(){const goal=getKcalGoal();if(!goal){toast('Set a daily calorie goal first');document.querySelector('.nav-btn[aria-label="BMI"]')?.click();return}try{starterPlanPreview=buildStarterMealPlan(goal)}catch(error){toast(error.message);return}document.getElementById('starter-plan-modal')?.remove();const totals=starterPlanTotals(starterPlanPreview),modal=document.createElement('div');modal.id='starter-plan-modal';modal.className='modal-overlay';modal.onclick=event=>{if(event.target===modal)modal.remove()};modal.innerHTML=`<div class="modal-sheet starter-plan-sheet"><div class="modal-handle"></div><div class="modal-title">Starter meal plan · ${starterPlanPreview.goal.toLocaleString()} kcal</div><div class="modal-sub">Portions are estimates for planning, not medical advice. You can edit every meal and product after applying.</div><div class="starter-plan-summary"><strong>${totals.kcal.toLocaleString()} kcal</strong><span>${Math.round(totals.p)}g protein · ${Math.round(totals.c)}g carbs · ${Math.round(totals.f)}g fat</span></div><div class="starter-plan-grid">${starterPlanPreview.meals.map(meal=>`<div class="starter-plan-meal"><div class="starter-plan-meal-head"><strong>${h(meal.name)}</strong><span>~${meal.targetKcal} kcal</span></div>${meal.items.map(item=>`<div class="starter-plan-food"><span>${h(item.label)} · ${item.grams}g</span><span>${item.kcal} kcal</span></div>`).join('')}</div>`).join('')}</div><div class="starter-plan-warning">Applying this plan replaces the current meal layout and resets weekly meal checkmarks. Nutrition history and personal products stay saved.</div><div class="starter-plan-actions"><button class="scan-btn" onclick="applyStarterMealPlan()">Use this plan</button><button class="scan-btn secondary" onclick="document.getElementById('starter-plan-modal').remove()">Cancel</button></div></div>`;document.body.appendChild(modal)}
+function starterPlanStylesHTML(){return`<div class="starter-plan-styles" role="group" aria-label="Meal plan macro style">${Object.entries(STARTER_PLAN_PROFILES).map(([key,profile])=>{const active=starterPlanPreview.style===key;return`<button type="button" class="starter-plan-style ${active?'active':''}" data-plan-style="${key}" aria-pressed="${active}" onclick="setStarterPlanStyle('${key}')"><strong>${h(profile.label)}</strong><span>${h(profile.description)}</span></button>`}).join('')}</div>`}
+function renderStarterPlanModal(){const totals=starterPlanTotals(starterPlanPreview),shares=starterPlanShares(starterPlanPreview);let modal=document.getElementById('starter-plan-modal');if(!modal){modal=document.createElement('div');modal.id='starter-plan-modal';modal.className='modal-overlay';modal.onclick=event=>{if(event.target===modal)modal.remove()};document.body.appendChild(modal)}modal.innerHTML=`<div class="modal-sheet starter-plan-sheet"><div class="modal-handle"></div><div class="modal-title" id="starter-plan-title">Starter meal plan · ${starterPlanPreview.goal.toLocaleString()} kcal</div><div class="modal-sub">Choose a macro style, review the portions, then adjust any meal or product after applying.</div>${starterPlanStylesHTML()}<div class="starter-plan-summary"><div><strong>${totals.kcal.toLocaleString()} kcal</strong><small>${h(starterPlanPreview.profile.label)}</small></div><span>${wholeMacro(totals.p)}g protein · ${wholeMacro(totals.c)}g carbs · ${wholeMacro(totals.f)}g fat<br>P ${shares.p}% · C ${shares.c}% · F ${shares.f}%</span></div><div class="starter-plan-grid">${starterPlanPreview.meals.map(meal=>`<div class="starter-plan-meal"><div class="starter-plan-meal-head"><strong>${h(meal.name)}</strong><span>~${meal.targetKcal} kcal</span></div>${meal.items.map(item=>`<div class="starter-plan-food"><span>${h(item.label)} · ${item.grams}g</span><span>${item.kcal} kcal</span></div>`).join('')}</div>`).join('')}</div><div class="starter-plan-warning">Applying this plan replaces the current meal layout and resets weekly meal checkmarks. Nutrition history and personal products stay saved.</div><div class="starter-plan-actions"><button class="scan-btn" onclick="applyStarterMealPlan()">Use this plan</button><button class="scan-btn secondary" onclick="document.getElementById('starter-plan-modal').remove()">Cancel</button></div></div>`}
+function openStarterMealPlan(style='balanced'){const goal=getKcalGoal();if(!goal){toast('Set a daily calorie goal first');document.querySelector('.nav-btn[aria-label="BMI"]')?.click();return}try{starterPlanPreview=buildStarterMealPlan(goal,style)}catch(error){toast(error.message);return}document.getElementById('starter-plan-modal')?.remove();renderStarterPlanModal()}
+function setStarterPlanStyle(style){try{starterPlanPreview=buildStarterMealPlan(starterPlanPreview?.goal||getKcalGoal(),style);renderStarterPlanModal();requestAnimationFrame(()=>document.querySelector(`.starter-plan-style[data-plan-style="${style}"]`)?.focus())}catch(error){toast(error.message)}}
 function clearStarterPlanFoods(){if(!S.userLibrary)S.userLibrary={};Object.keys(S.userLibrary).filter(name=>name.startsWith(STARTER_PLAN_PREFIX)).forEach(name=>{delete S.userLibrary[name];delete MACROS[name]});S.foodFavorites=S.foodFavorites.filter(name=>!name.startsWith(STARTER_PLAN_PREFIX));S.recentFoods=S.recentFoods.filter(name=>!name.startsWith(STARTER_PLAN_PREFIX))}
 function applyStarterMealPlan(){if(!starterPlanPreview)return;const previous=clone(S);clearStarterPlanFoods();const meals=[],mealIngredients={};starterPlanPreview.meals.forEach((meal,index)=>{const ingredients=meal.items.map(item=>{const key=starterPlanItemKey(meal.name,item),entry={kcal:item.kcal,p:item.p,c:item.c,f:item.f,serving:`${item.grams}g`,addedAt:Date.now()};S.userLibrary[key]=entry;MACROS[key]=entry;return key});meals.push({name:meal.name,ingredients});mealIngredients[index]=[...ingredients]});S.meals=meals;S.mealIngredients=mealIngredients;S.mealChecks={};recordNutritionSnapshot();if(!save()){S=previous;hydrateUserMacros();toast('The starter plan could not be saved');return}document.getElementById('starter-plan-modal')?.remove();const mealsButton=document.querySelector('.nav-btn[aria-label="Meals"]');if(mealsButton)showPage('meals',mealsButton);else rMeals();toast(`Starter plan created for ${starterPlanPreview.goal.toLocaleString()} kcal ✓`)}
 function nutritionDateKey(){return nowGMT4().toISOString().slice(0,10)}
-function currentNutritionTotals(day=S.activeMealDay){const ingredients=S.meals.flatMap((meal,index)=>S.mealChecks[`m${index}_d${day}`]?(S.mealIngredients[index]||meal.ingredients):[]),totals=calcMacros(ingredients);return{kcal:totals.kcal,p:totals.p,c:totals.cr,f:totals.f}}
+function selectedNutritionIngredients(){return S.meals.flatMap((meal,index)=>S.mealIngredients[index]||meal.ingredients||[])}
+function currentNutritionTotals(day=S.activeMealDay){const totals=calcMacros(selectedNutritionIngredients());return{kcal:totals.kcal,p:totals.p,c:totals.cr,f:totals.f}}
 function recordNutritionSnapshot(day=S.activeMealDay){if(day!==todayIdx())return;S.dailyNutrition[nutritionDateKey()]={...currentNutritionTotals(day),updatedAt:new Date().toISOString()}}
 function markFoodRecent(name){S.recentFoods=[name,...S.recentFoods.filter(item=>item!==name)].slice(0,20)}
 function toggleFoodFavorite(name,event){event?.stopPropagation();S.foodFavorites=S.foodFavorites.includes(name)?S.foodFavorites.filter(item=>item!==name):[name,...S.foodFavorites];save();rMeals();toast(S.foodFavorites.includes(name)?'Added to favorites ★':'Removed from favorites')}
@@ -32,9 +38,8 @@ function quickFoodsHTML(mi,selected){
   return`<div class="quick-foods"><div class="quick-food-label">Favorites & recent</div><div class="quick-food-list">${items.map(name=>`<button class="quick-food ${selected.includes(name)?'active':''}" onclick="tgI(${mi},decodeURIComponent('${enc(name)}'),event)">${S.foodFavorites.includes(name)?'★':'↻'} ${h(name)}</button>`).join('')}</div></div>`;
 }
 function donutSVG(p,cr,f,sz=140){const total=p*4+cr*4+f*9||1;const segs=[{v:p*4,color:'#4d9fff',label:i('prot')},{v:cr*4,color:'#ffb627',label:'Carbs'},{v:f*9,color:'#ff5252',label:i('fat')}];const r=44,cx=sz/2,cy=sz/2,circ=2*Math.PI*r;let offset=0;const arcs=segs.map(s=>{const dash=(s.v/total)*circ,gap=circ-dash,d=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="18" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="butt"/>`;offset+=dash;return d}).join('');return`<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">${arcs}<circle cx="${cx}" cy="${cy}" r="30" fill="var(--card)"/></svg>`}
-function macroCard(ingredients){const {kcal,p,cr,f}=calcMacros(ingredients);const total=p*4+cr*4+f*9||1;const pp=Math.round(p*4/total*100),cp=Math.round(cr*4/total*100),fp=Math.round(f*9/total*100);const c=C();
-if(kcal===0)return`<div class="card ca-teal" style="margin-bottom:12px"><div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px">${i('md')}</div><div style="text-align:center;color:var(--text3);font-size:14px;padding:16px 0">${i('nm')}</div></div>`;
-return`<div class="card ca-teal" style="margin-bottom:12px">
+function macroCard(ingredients){const totals=calcMacros(ingredients),{p,cr,f}=totals,kcal=wholeMacro(totals.kcal),displayP=wholeMacro(p),displayC=wholeMacro(cr),displayF=wholeMacro(f),total=p*4+cr*4+f*9||1,pp=Math.round(p*4/total*100),cp=Math.round(cr*4/total*100),fp=Math.round(f*9/total*100),c=C();
+return`<div class="card ca-teal" data-macro-card="today" data-kcal="${kcal}" data-protein="${displayP}" data-carbs="${displayC}" data-fat="${displayF}" style="margin-bottom:12px">
 <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:14px">${i('md')}</div>
 <div style="display:flex;align-items:center;gap:20px">
   <div style="position:relative;flex-shrink:0">${donutSVG(p,cr,f)}
@@ -47,21 +52,21 @@ return`<div class="card ca-teal" style="margin-bottom:12px">
     <div>
       <div style="display:flex;justify-content:space-between;margin-bottom:4px">
         <span style="font-size:13px;font-weight:500;color:${c.b}">${i('prot')}</span>
-        <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:${c.b}">${p}g <span style="font-size:12px;opacity:.6">${pp}%</span></span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:${c.b}">${displayP}g <span style="font-size:12px;opacity:.6">${pp}%</span></span>
       </div>
       <div style="height:5px;border-radius:99px;background:var(--bg3)"><div style="width:${pp}%;height:5px;border-radius:99px;background:${c.b}"></div></div>
     </div>
     <div>
       <div style="display:flex;justify-content:space-between;margin-bottom:4px">
         <span style="font-size:13px;font-weight:500;color:${c.a}">${i('carb')}</span>
-        <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:${c.a}">${cr}g <span style="font-size:12px;opacity:.6">${cp}%</span></span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:${c.a}">${displayC}g <span style="font-size:12px;opacity:.6">${cp}%</span></span>
       </div>
       <div style="height:5px;border-radius:99px;background:var(--bg3)"><div style="width:${cp}%;height:5px;border-radius:99px;background:${c.a}"></div></div>
     </div>
     <div>
       <div style="display:flex;justify-content:space-between;margin-bottom:4px">
         <span style="font-size:13px;font-weight:500;color:${c.r}">${i('fat')}</span>
-        <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:${c.r}">${f}g <span style="font-size:12px;opacity:.6">${fp}%</span></span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:${c.r}">${displayF}g <span style="font-size:12px;opacity:.6">${fp}%</span></span>
       </div>
       <div style="height:5px;border-radius:99px;background:var(--bg3)"><div style="width:${fp}%;height:5px;border-radius:99px;background:${c.r}"></div></div>
     </div>
@@ -69,9 +74,9 @@ return`<div class="card ca-teal" style="margin-bottom:12px">
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
   <div style="text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--text)">${kcal}</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Kcal</div></div>
-  <div style="text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:${c.b}">${p}g</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${i('prot')}</div></div>
-  <div style="text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:${c.a}">${cr}g</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${i('carb')}</div></div>
-  <div style="text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:${c.r}">${f}g</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${i('fat')}</div></div>
+  <div style="text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:${c.b}">${displayP}g</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${i('prot')}</div></div>
+  <div style="text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:${c.a}">${displayC}g</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${i('carb')}</div></div>
+  <div style="text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:${c.r}">${displayF}g</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${i('fat')}</div></div>
 </div>
 </div>`}
 function toggleCat(id){const b=document.getElementById('cb-'+id),a=document.getElementById('ca-'+id);if(!b||!a)return;b.classList.toggle('open');a.classList.toggle('open')}
@@ -252,7 +257,7 @@ function openLibraryModal(){
     :items.map(([name,m])=>`<div class="lib-item">
       <div style="flex:1;min-width:0">
         <div class="lib-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(name)}</div>
-        <div class="lib-macros">🔥${Number(m.kcal)||0}kcal · P:${Number(m.p)||0}g · C:${Number(m.c)||0}g · G:${Number(m.f)||0}g · ${h(m.serving)}</div>
+        <div class="lib-macros">🔥${wholeMacro(m.kcal)}kcal · P:${wholeMacro(m.p)}g · C:${wholeMacro(m.c)}g · G:${wholeMacro(m.f)}g · ${h(m.serving)}</div>
       </div>
       <div style="display:flex;gap:6px;margin-left:10px">
         <button aria-label="Favorite ${h(name)}" onclick="toggleFoodFavorite(decodeURIComponent('${enc(name)}'),event);renderLibraryModal()" style="padding:7px;color:var(--amber);font-size:17px">${S.foodFavorites.includes(name)?'★':'☆'}</button>
@@ -286,7 +291,7 @@ function ingrPickerHTML(mi,si){
     const selCount=Object.keys(cat.items).filter(ig=>si.includes(ig)).length;
     const rows=Object.keys(cat.items).map(ig=>{
       const sel=si.includes(ig),m=cat.items[ig];
-      const macro=`${m.p}P · ${m.c}C · ${m.f}G`;
+      const macro=`${wholeMacro(m.p)}P · ${wholeMacro(m.c)}C · ${wholeMacro(m.f)}G`;
       return`<div class="ingr-row ${sel?'sel':''}" role="button" tabindex="0" onclick="tgI(${mi},decodeURIComponent('${enc(ig)}'),event)">
         <div style="flex:1;min-width:0">
           <div class="ingr-label">${h(ig)}</div>
@@ -320,7 +325,7 @@ function ingrPickerHTML(mi,si){
       <div class="cat-body open">
         ${customIngrs.map(ig=>{
           const m=MACROS[ig]||{kcal:0,p:0,c:0,f:0};
-          const macro=`${m.p||0}P · ${m.c||0}C · ${m.f||0}G`;
+          const macro=`${wholeMacro(m.p)}P · ${wholeMacro(m.c)}C · ${wholeMacro(m.f)}G`;
           return`<div class="ingr-row sel" role="button" tabindex="0" onclick="tgI(${mi},decodeURIComponent('${enc(ig)}'),event)">
             <div style="flex:1;min-width:0">
               <div class="ingr-label">${h(ig)}</div>
@@ -361,7 +366,7 @@ function rMeals(){
   syncDay();
   const c=C(),d=S.activeMealDay;
   recordNutritionSnapshot(d);
-  const allIngr=S.meals.flatMap((_,mi)=>S.mealChecks[`m${mi}_d${d}`]?(S.mealIngredients[mi]||S.meals[mi].ingredients):[]);
+  const allIngr=selectedNutritionIngredients();
   document.getElementById('page-meals').innerHTML=
     `${pageIntroHTML('FUEL // 02','Nutrition','Fuel the work. Track what matters. Keep it repeatable.')}<div class="sec-label">${i('sd')}</div>
     <div class="day-tabs">${DS.map((day,di)=>`<button class="dtab ${d===di?'active':''}" onclick="S.activeMealDay=${di};save();rMeals()">${day}</button>`).join('')}</div>

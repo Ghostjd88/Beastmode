@@ -196,8 +196,8 @@ function validateBodyValue(key,value){
   const number=Number(value),valid=Number.isFinite(number)&&number>=limits[0]&&number<=limits[1];
   return{valid,value:valid?String(number):'',message:`Enter a value from ${limits[0]} to ${limits[1]}.`};
 }
-function updateBodyDraft(key,input){
-  S.body[key]=input.value;rBMIResults();
+function updateBodyDraft(key,input,rerender=true){
+  S.body[key]=input.value;if(rerender)rBMIResults();
   const result=validateBodyValue(key,input.value);
   if(result.valid){input.removeAttribute('aria-invalid');save()}else input.setAttribute('aria-invalid','true');
 }
