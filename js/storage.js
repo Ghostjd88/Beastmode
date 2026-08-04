@@ -27,7 +27,7 @@ const stateBytes=state=>new TextEncoder().encode(JSON.stringify(state)).length;
 
 function sanitizeMacro(value){
   const item=value&&typeof value==='object'?value:{};
-  return{kcal:Math.min(100000,Math.max(0,Number(item.kcal)||0)),p:Math.min(10000,Math.max(0,Number(item.p)||0)),c:Math.min(10000,Math.max(0,Number(item.c)||0)),f:Math.min(10000,Math.max(0,Number(item.f)||0)),serving:cleanText(item.serving||'1 porción',80),addedAt:Number.isFinite(Number(item.addedAt))?Number(item.addedAt):Date.now()};
+  return{kcal:Math.min(100000,Math.max(0,Number(item.kcal)||0)),p:Math.min(10000,Math.max(0,Number(item.p)||0)),c:Math.min(10000,Math.max(0,Number(item.c)||0)),f:Math.min(10000,Math.max(0,Number(item.f)||0)),serving:cleanText(item.serving||'1 porción',80),grams:Math.min(10000,Math.max(0,Number(item.grams)||0)),addedAt:Number.isFinite(Number(item.addedAt))?Number(item.addedAt):Date.now()};
 }
 function sanitizeWorkoutRows(rows,fallback){
   if(!Array.isArray(rows))return clone(fallback);

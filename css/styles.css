@@ -155,11 +155,11 @@ input[type=checkbox]{-webkit-appearance:checkbox;appearance:checkbox}
 .sri-name{font-size:14px;font-weight:500;color:var(--text)}
 .sri-macros{font-size:12px;color:var(--text3);margin-top:3px}
 .sri-macros span{margin-right:8px}
-.qty-row{display:flex;gap:8px;align-items:center;padding:10px 14px;background:var(--bg3);border-radius:10px;margin-bottom:10px;display:none}
-.qty-input{width:80px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--accent);background:var(--card);font-size:16px;font-weight:700;color:var(--accent);font-family:'Barlow Condensed',sans-serif;text-align:center;outline:none}
+.qty-row{display:flex;gap:8px;align-items:center;padding:10px 14px;background:var(--bg3);border-radius:10px;margin-bottom:10px;display:none}.qty-content{width:100%;min-width:0}.qty-controls{display:grid;grid-template-columns:minmax(74px,.7fr) minmax(88px,.8fr) minmax(108px,1fr) auto;gap:8px;align-items:end}.qty-field{display:flex;min-width:0;flex-direction:column;gap:4px}.qty-field[hidden]{display:none!important}.qty-field>span{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text3)}.qty-input,.qty-select{width:100%;min-height:44px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--accent);background:var(--card);font-size:16px;font-weight:700;color:var(--accent);font-family:'Barlow Condensed',sans-serif;text-align:center;outline:none}.qty-select{text-align:left}.qty-help{margin-top:7px;font-size:10px;line-height:1.4;color:var(--text3)}
 .qty-unit{font-size:13px;color:var(--text2);flex:1}
 .qty-add-btn{padding:9px 16px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;border:none;cursor:pointer;white-space:nowrap}
 .qty-add-btn:active{opacity:.8}
+@media(max-width:520px){.qty-controls{grid-template-columns:1fr 1fr}.qty-conversion{grid-column:1/-1}.qty-add-btn{grid-column:1/-1;min-height:44px}}
 .custom-ingr-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;font-size:12px;font-weight:500;margin:3px;cursor:pointer;transition:all .15s}
 
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:flex;align-items:flex-end;justify-content:center}

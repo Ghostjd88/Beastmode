@@ -82,6 +82,10 @@ return`<div class="card ca-teal" data-macro-card="today" data-kcal="${kcal}" dat
 function toggleCat(id){const b=document.getElementById('cb-'+id),a=document.getElementById('ca-'+id);if(!b||!a)return;b.classList.toggle('open');a.classList.toggle('open')}
 const USDA_KEY='DEMO_KEY';
 let searchTimer=null,searchSelected=null;
+const FOOD_QUANTITY_UNITS={g:{label:'g',grams:1},oz:{label:'oz',grams:28.3495},piece:{label:'piece'},serving:{label:'serving'},slice:{label:'slice'},cup:{label:'cup'},tbsp:{label:'tbsp'},tsp:{label:'tsp'},ml:{label:'ml'}};
+const foodQuantityLabel=(quantity,unit)=>`${Number(quantity).toLocaleString(undefined,{maximumFractionDigits:2})} ${FOOD_QUANTITY_UNITS[unit].label}${quantity!==1&&['piece','serving','slice','cup'].includes(unit)?'s':''}`;
+function foodPortionDetails(quantity,unit,gramsPerUnit){const amount=Number(quantity),option=FOOD_QUANTITY_UNITS[unit];if(!option||!Number.isFinite(amount)||amount<=0||amount>2000)throw new Error('Enter a quantity from 0.01 to 2,000');const conversion=option.grams||Number(gramsPerUnit);if(!Number.isFinite(conversion)||conversion<=0||conversion>2000)throw new Error(`Enter the gram weight for one ${option.label}`);const grams=amount*conversion;if(grams>10000)throw new Error('The total portion cannot exceed 10,000 g');return{grams,label:foodQuantityLabel(amount,unit)}}
+function changeFoodUnit(mi){const unit=document.getElementById('squ-'+mi),quantity=document.getElementById('sqi-'+mi),conversion=document.getElementById('sqc-'+mi),conversionWrap=document.getElementById('sqcw-'+mi),fixed=FOOD_QUANTITY_UNITS[unit.value].grams;conversionWrap.hidden=Boolean(fixed);conversion.disabled=Boolean(fixed);quantity.value=fixed===1?'100':'1';quantity.focus()}
 async function doSearch(mi,query){
   if(!query.trim()){document.getElementById('sr-'+mi).style.display='none';return}
   const sp=document.getElementById('sp-'+mi),si=document.getElementById('si-'+mi),re=document.getElementById('sr-'+mi);
@@ -112,16 +116,20 @@ function selectFood(mi,name,kcal,p,c,f){
   document.getElementById('sq-'+mi).style.display='flex';
   document.getElementById('sqn-'+mi).textContent=name.substring(0,32)+'…';
   document.getElementById('sqi-'+mi).value='100';
+  document.getElementById('squ-'+mi).value='g';
+  document.getElementById('sqcw-'+mi).hidden=true;
+  document.getElementById('sqc-'+mi).disabled=true;
+  document.getElementById('sqc-'+mi).value='';
   document.getElementById('sqi-'+mi).focus();
 }
 function addCustomFood(mi){
   if(!searchSelected||searchSelected.mi!==mi)return;
-  const quantity=document.getElementById('sqi-'+mi),g=Number(quantity.value);
-  if(!Number.isFinite(g)||g<1||g>2000){quantity.setAttribute('aria-invalid','true');toast('Enter a serving from 1g to 2000g');quantity.focus();return}
-  quantity.removeAttribute('aria-invalid');
-  const r=g/100;
-  const nm=Math.round(g)+'g '+searchSelected.name;
-  const entry={kcal:Math.round(searchSelected.kcal100*r),p:Math.round(searchSelected.p100*r),c:Math.round(searchSelected.c100*r),f:Math.round(searchSelected.f100*r),serving:Math.round(g)+'g',addedAt:Date.now()};
+  const quantity=document.getElementById('sqi-'+mi),unit=document.getElementById('squ-'+mi),conversion=document.getElementById('sqc-'+mi);let portion;
+  try{portion=foodPortionDetails(quantity.value,unit.value,conversion.value)}catch(error){const target=FOOD_QUANTITY_UNITS[unit.value]?.grams?quantity:conversion;target.setAttribute('aria-invalid','true');toast(error.message);target.focus();return}
+  quantity.removeAttribute('aria-invalid');conversion.removeAttribute('aria-invalid');
+  const r=portion.grams/100;
+  const nm=portion.label+' '+searchSelected.name;
+  const entry={kcal:Math.round(searchSelected.kcal100*r),p:Math.round(searchSelected.p100*r),c:Math.round(searchSelected.c100*r),f:Math.round(searchSelected.f100*r),serving:portion.label,grams:Math.round(portion.grams*10)/10,addedAt:Date.now()};
   MACROS[nm]=entry;
   if(!S.userLibrary)S.userLibrary={};
   S.userLibrary[nm]=entry;
@@ -347,16 +355,18 @@ function ingrPickerHTML(mi,si){
         <button onclick="event.stopPropagation();scanState.mealIdx=${mi};openLibraryModal()" style="padding:5px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer">📚 Librería</button>
       </div>
     </div>
-    <div class="search-box"><input class="search-input" id="sbin-${mi}" type="text" placeholder="ej: chicken breast, broccoli, rice…" oninput="clearTimeout(searchTimer);searchTimer=setTimeout(()=>doSearch(${mi},this.value),500)"><span class="search-icon" id="si-${mi}">🔍</span><div class="search-spinner" id="sp-${mi}"></div></div>
+    <div class="search-box"><input class="search-input" id="sbin-${mi}" data-testid="food-search-${mi}" type="text" placeholder="ej: chicken breast, broccoli, rice…" oninput="clearTimeout(searchTimer);searchTimer=setTimeout(()=>doSearch(${mi},this.value),500)"><span class="search-icon" id="si-${mi}">🔍</span><div class="search-spinner" id="sp-${mi}"></div></div>
     <div class="search-results" id="sr-${mi}"></div>
     <div class="qty-row" id="sq-${mi}" style="display:none">
-      <div style="flex:1">
+      <div class="qty-content">
         <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px" id="sqn-${mi}"></div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <input class="qty-input" id="sqi-${mi}" type="number" value="100" min="1" max="2000" onkeydown="if(event.key==='Enter')addCustomFood(${mi})">
-          <span style="font-size:13px;color:var(--text2)">gramos</span>
-          <button class="qty-add-btn" onclick="addCustomFood(${mi})">+ Agregar</button>
+        <div class="qty-controls">
+          <label class="qty-field"><span>Quantity</span><input class="qty-input" id="sqi-${mi}" data-testid="food-quantity-${mi}" aria-label="Food quantity" type="number" value="100" min="0.01" max="2000" step="any" inputmode="decimal" onkeydown="if(event.key==='Enter')addCustomFood(${mi})"></label>
+          <label class="qty-field"><span>Unit</span><select class="qty-select" id="squ-${mi}" data-testid="food-unit-${mi}" aria-label="Food quantity unit" onchange="changeFoodUnit(${mi})">${Object.entries(FOOD_QUANTITY_UNITS).map(([value,option])=>`<option value="${value}">${option.label}</option>`).join('')}</select></label>
+          <label class="qty-field qty-conversion" id="sqcw-${mi}" hidden><span>Grams per unit</span><input class="qty-input" id="sqc-${mi}" data-testid="food-conversion-${mi}" aria-label="Gram weight per unit" type="number" min="0.01" max="2000" step="any" inputmode="decimal" placeholder="e.g. 50" disabled onkeydown="if(event.key==='Enter')addCustomFood(${mi})"></label>
+          <button class="qty-add-btn" data-testid="food-add-${mi}" onclick="addCustomFood(${mi})">+ Agregar</button>
         </div>
+        <div class="qty-help">Weight units convert automatically. For pieces, servings, and volume, enter the label or measured gram weight for one unit.</div>
       </div>
     </div>
   </div>
