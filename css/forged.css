@@ -101,3 +101,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .app-header{padding-top:max(11px,env(safe-area-inset-top,0px))}
 @media(max-width:560px){.app-header{padding-top:max(9px,env(safe-area-inset-top,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}.page{padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}.bottom-nav{padding-left:max(4px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}.meal-name-in{font-size:16px}.page select,.page textarea{font-size:max(16px,1em)}}
 @media(max-width:360px){.nav-btn{padding-inline:1px;font-size:9px;letter-spacing:0}.nav-btn svg{width:21px;height:21px}.app-title{font-size:25px}}
+.quick-food-list{min-width:0;overscroll-behavior-inline:contain;scroll-snap-type:x proximity;touch-action:pan-x;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.quick-food-list::-webkit-scrollbar{display:none}
+.quick-food{flex:0 0 auto;max-width:72vw;overflow:hidden;text-overflow:ellipsis;scroll-snap-align:start}
