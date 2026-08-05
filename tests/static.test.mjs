@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const html=read('index.html'),css=read('css/styles.css'),forged=read('css/forged.css');
-const modulePaths=['js/storage.js','js/app.js','js/workouts.js','js/exercises.js','js/nutrition.js','js/progress.js','js/insights.js','js/security.js','js/pwa.js','js/accessibility.js','js/bootstrap.js','js/browser-check.js'];
+const modulePaths=['js/storage.js','js/app.js','js/workouts.js','js/exercises.js','js/nutrition.js','js/progress.js','js/insights.js','js/security.js','js/pwa.js','js/accessibility.js','js/mobile-ui.js','js/bootstrap.js','js/browser-check.js'];
 const modules=Object.fromEntries(modulePaths.map(path=>[path,read(path)]));
 const script=modulePaths.map(path=>modules[path]).join('\n');
 const exerciseData=JSON.parse(read('data/exercises.min.json'));
@@ -42,7 +42,7 @@ test('browser-only secrets and broken AI calls are absent',()=>{
 });
 test('versioned storage, migrations and capacity protection are present',()=>{
   const storage=modules['js/storage.js'];
-  assert.match(storage,/BM_SCHEMA_VERSION=9/);
+  assert.match(storage,/BM_SCHEMA_VERSION=10/);
   assert.match(storage,/BM_LEGACY_KEYS=\['bm_v6','bm_v5'\]/);
   assert.match(storage,/function migrateState/);
   assert.match(storage,/QuotaExceededError/);
@@ -67,8 +67,10 @@ test('backup workflow validates, detects duplicates and supports recovery',()=>{
 test('product and progress entries have numeric safeguards',()=>{
   assert.match(modules['js/nutrition.js'],/Nutrition values must be valid non-negative numbers/);
   assert.match(modules['js/nutrition.js'],/already exists\. Replace it/);
-  assert.match(modules['js/progress.js'],/updateProgressValue/);
+  assert.match(modules['js/progress.js'],/updateProgressMeasurement/);
+  assert.match(modules['js/progress.js'],/metric\?\[23,680\]/);
   assert.match(modules['js/app.js'],/commitBodyField/);
+  assert.match(modules['js/app.js'],/function updateProfileHeightCm/);
 });
 test('manual calorie entry preserves the input while typing',()=>{assert.match(modules['js/storage.js'],/function updateBodyDraft\(key,input,rerender=true\)/);assert.match(modules['js/storage.js'],/if\(rerender\)rBMIResults\(\)/);assert.match(modules['js/app.js'],/updateBodyDraft\('kcalGoalManual',this,false\)/)});
 test('exercise guide dataset is complete and excludes restricted media',()=>{
@@ -86,7 +88,7 @@ test('food macros update independently from meal completion and display as whole
 test('starter meal plan scales four editable macro styles to the calorie goal',()=>{const nutrition=modules['js/nutrition.js'],api=new Function(nutrition+';return{buildStarterMealPlan,starterPlanTotals};')(),styles=['balanced','highCarb','highProtein','highFat'];for(const goal of [1200,1800,2200,3000,4500])for(const style of styles){const plan=api.buildStarterMealPlan(goal,style),totals=api.starterPlanTotals(plan);assert.equal(plan.meals.length,4);assert.ok(plan.meals.every(meal=>meal.items.length>=3));assert.ok(Math.abs(totals.kcal-goal)<=5,`${style} ${goal}: ${totals.kcal}`)}const totals=Object.fromEntries(styles.map(style=>[style,api.starterPlanTotals(api.buildStarterMealPlan(2200,style))]));assert.ok(totals.highCarb.c>totals.balanced.c&&totals.highCarb.f<totals.balanced.f);assert.ok(totals.highProtein.p>totals.balanced.p&&totals.highProtein.c<totals.balanced.c);assert.ok(totals.highFat.f>totals.balanced.f&&totals.highFat.c<totals.balanced.c);assert.throws(()=>api.buildStarterMealPlan(499));assert.throws(()=>api.buildStarterMealPlan(10001));assert.throws(()=>api.buildStarterMealPlan(2200,'unknown'));for(const name of ['openStarterMealPlan','applyStarterMealPlan','clearStarterPlanFoods','starterPlanCardHTML','setStarterPlanStyle'])assert.match(nutrition,new RegExp(`function ${name}`));for(const label of ['High carb / low fat','High protein / low carb','High fat / low carb'])assert.match(nutrition,new RegExp(label));assert.match(modules['js/app.js'],/Build starter meal plan/);assert.match(modules['js/app.js'],/aria-label="Daily calorie goal"/);assert.match(nutrition,/const previous=clone\(S\)/)});
 test('dashboard provides summaries, charts and personal records',()=>{const insights=modules['js/insights.js'];assert.match(insights,/Weekly coaching summary/);assert.match(insights,/Training volume/);assert.match(insights,/Calories/);assert.match(insights,/Personal records/)});
 test('optional PIN uses salted hashing and attempt cooldown',()=>{const security=modules['js/security.js'];assert.match(security,/crypto\.subtle\.digest\('SHA-256'/);assert.match(security,/crypto\.getRandomValues/);assert.match(security,/pinCooldownUntil/);assert.match(security,/does not encrypt browser storage/)});
-test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v16/);assert.match(serviceWorker,/css\/forged\.css/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
+test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon-192.png')));assert.ok(manifest.icons.some(icon=>icon.src.includes('icon-512.png')));assert.match(html,/apple-touch-icon/);assert.match(html,/viewport-fit=cover/);assert.match(serviceWorker,/beastmode-v19/);assert.match(serviceWorker,/data\/exercises\.min\.json\?v=19/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
 test('browser self-test covers core application surfaces',()=>{
   const selfTest=modules['js/browser-check.js'];
   for(const label of ['Accessible interaction shell','Versioned storage write','Backup validation','Workout rendering','Mobile workout flow','Nutrition rendering','Food quantity units','Starter meal plan','Meals macros without check-in','Manual calorie input','Progress validation','Exercise dataset'])assert.match(selfTest,new RegExp(label));

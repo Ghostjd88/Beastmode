@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BEAST MODE">
 <meta name="theme-color" content="#0b0e12">
 <title>BEAST MODE — 8 Semanas</title>
-<link rel="manifest" href="./manifest.webmanifest?v=16">
-<link rel="icon" href="./assets/icon.svg?v=16" type="image/svg+xml">
+<link rel="manifest" href="./manifest.webmanifest?v=19">
+<link rel="icon" href="./assets/icon.svg?v=19" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./assets/icon-180.png?v=19">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./css/styles.css?v=16">
-<link rel="stylesheet" href="./css/forged.css?v=16">
+<link rel="stylesheet" href="./css/styles.css?v=19">
+<link rel="stylesheet" href="./css/forged.css?v=19">
 </head>
 <body>
 
@@ -32,37 +33,35 @@
 <div id="page-habits" class="page"></div>
 <div id="page-bmi" class="page"></div>
 <nav class="bottom-nav">
-  <button class="nav-btn active" onclick="showPage('dashboard',this)" aria-label="Home">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Home
+  <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard',this)" aria-label="Today" aria-current="page">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Today
   </button>
-  <button class="nav-btn" onclick="showPage('workout',this)" aria-label="Gym">
-    <svg viewBox="0 0 24 24"><path d="M6 5v14M18 5v14M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg><span id="nv1">Gym</span>
+  <button class="nav-btn" data-page="workout" onclick="showPage('workout',this)" aria-label="Train">
+    <svg viewBox="0 0 24 24"><path d="M6 5v14M18 5v14M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg><span id="nv1">Train</span>
   </button>
-  <button class="nav-btn" onclick="showPage('meals',this)" aria-label="Meals">
-    <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg><span id="nv2">Meals</span>
+  <button class="nav-btn" data-page="meals" onclick="showPage('meals',this)" aria-label="Food">
+    <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg><span id="nv2">Food</span>
   </button>
-  <button class="nav-btn" onclick="showPage('progress',this)" aria-label="Progress">
+  <button class="nav-btn" data-page="progress" onclick="showPage('progress',this)" aria-label="Progress">
     <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span id="nv3">Progress</span>
   </button>
-  <button class="nav-btn" onclick="showPage('habits',this)" aria-label="Habits">
-    <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><span id="nv4">Habits</span>
-  </button>
-  <button class="nav-btn" onclick="showPage('bmi',this)" aria-label="BMI">
-    <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v6l4 2"/></svg><span id="nv5">BMI</span>
+  <button class="nav-btn" data-page="bmi" onclick="showPage('bmi',this)" aria-label="More">
+    <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v6l4 2"/></svg><span id="nv5">More</span>
   </button>
 </nav>
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
-<script src="./js/storage.js?v=16"></script>
-<script src="./js/app.js?v=16"></script>
-<script src="./js/workouts.js?v=16"></script>
-<script src="./js/exercises.js?v=16"></script>
-<script src="./js/nutrition.js?v=16"></script>
-<script src="./js/progress.js?v=16"></script>
-<script src="./js/insights.js?v=16"></script>
-<script src="./js/security.js?v=16"></script>
-<script src="./js/pwa.js?v=16"></script>
-<script src="./js/accessibility.js?v=16"></script>
-<script src="./js/bootstrap.js?v=16"></script>
-<script src="./js/browser-check.js?v=16"></script>
+<script src="./js/storage.js?v=19"></script>
+<script src="./js/app.js?v=19"></script>
+<script src="./js/workouts.js?v=19"></script>
+<script src="./js/exercises.js?v=19"></script>
+<script src="./js/nutrition.js?v=19"></script>
+<script src="./js/progress.js?v=19"></script>
+<script src="./js/insights.js?v=19"></script>
+<script src="./js/security.js?v=19"></script>
+<script src="./js/pwa.js?v=19"></script>
+<script src="./js/accessibility.js?v=19"></script>
+<script src="./js/mobile-ui.js?v=19"></script>
+<script src="./js/bootstrap.js?v=19"></script>
+<script src="./js/browser-check.js?v=19"></script>
 </body>
 </html>

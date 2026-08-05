@@ -1,4 +1,4 @@
-const BM_SCHEMA_VERSION=9;
+const BM_SCHEMA_VERSION=10;
 const BM_STORAGE_KEY='bm_state';
 const BM_AUTO_BACKUP_KEY='bm_auto_backup';
 const BM_ROLLBACK_KEY='bm_import_rollback';
@@ -6,7 +6,7 @@ const BM_LEGACY_KEYS=['bm_v6','bm_v5'];
 const BM_LOCAL_LIMIT=5*1024*1024;
 const BM_WARNING_RATIO=.75;
 const BM_MAX_IMPORT_BYTES=5*1024*1024;
-const BODY_LIMITS={weight:[50,1500],goalWeight:[50,1500],heightFt:[2,8],heightIn:[0,11],age:[13,120],kcalGoalManual:[500,10000],kcalGoalPick:[500,10000]};
+const BODY_LIMITS={weight:[50,1500],goalWeight:[50,1500],heightFt:[2,8],heightIn:[0,11.9],age:[13,120],kcalGoalManual:[500,10000],kcalGoalPick:[500,10000]};
 let storageWarningShown=false,lastStorageError='';
 
 const clone=value=>JSON.parse(JSON.stringify(value));
@@ -43,6 +43,7 @@ function sanitizeState(input,defaults){
   const next=clone(defaults),body=input.body&&typeof input.body==='object'?input.body:{};
   next.body={...next.body};
   for(const [key,limits] of Object.entries(BODY_LIMITS))next.body[key]=cleanNumber(body[key],...limits);
+  next.body.unit=body.unit==='metric'?'metric':'imperial';
   next.body.sex=['male','female'].includes(body.sex)?body.sex:next.body.sex;
   next.body.activity=['sedentary','light','moderate','active','veryActive'].includes(body.activity)?body.activity:next.body.activity;
   next.body.kcalGoalMode=['auto','pick','manual'].includes(body.kcalGoalMode)?body.kcalGoalMode:next.body.kcalGoalMode;
@@ -87,6 +88,7 @@ function migrateState(input,fromVersion,defaults){
   if(version<7){if(Array.isArray(migrated.workouts))migrated.workouts=clone(defaults.workouts);if(!migrated.mealIngredients||typeof migrated.mealIngredients!=='object')migrated.mealIngredients={}}
   if(version<8){for(const key of ['customRoutines','workoutLogs','foodFavorites','recentFoods'])if(!Array.isArray(migrated[key]))migrated[key]=[];if(!migrated.dailyNutrition||typeof migrated.dailyNutrition!=='object')migrated.dailyNutrition={};if(!('activeWorkout'in migrated))migrated.activeWorkout=null}
   if(version<9){migrated.workoutUnit='lb';migrated.restTimerSeconds=90;migrated.lastWorkoutSummaryId=''}
+  if(version<10)migrated.body={...(migrated.body||{}),unit:'imperial'};
   return sanitizeState(migrated,defaults);
 }
 function unwrapStored(raw){
