@@ -131,14 +131,14 @@ const DEF={workouts:{
     {day:'Rest',exercises:'Full recovery',reps:'—',notes:'Prioritize sleep & hydration'},
   ]},meals:[{name:'Breakfast',ingredients:[]},{name:'Lunch',ingredients:[]},{name:'Dinner',ingredients:[]}],checklist:{},mealChecks:{},mealIngredients:{},progress:Array.from({length:8},(_,i)=>({week:i+1,weight:'',waist:'',energy:'',strength:'',notes:''})),habits:{},habitNames:['Entrenamiento','10k pasos / caminar','Comida limpia','Sin alcohol','Dormir 7+ horas'],activeMealDay:0,activeProgressWeek:0,theme:'dark',userLibrary:{},activePhase:'fase1',userName:'',customRoutines:[],activeRoutineId:'',workoutLogs:[],activeWorkout:null,foodFavorites:[],recentFoods:[],dailyNutrition:{},
   workoutUnit:'lb',restTimerSeconds:90,lastWorkoutSummaryId:'',
-  body:{weight:'',goalWeight:'',heightFt:'',heightIn:'',age:'',sex:'male',activity:'moderate',unit:'imperial',kcalGoalMode:'auto',kcalGoalPick:null,kcalGoalManual:''}};
+  body:{weight:'',goalWeight:'',heightFt:'',heightIn:'',age:'',sex:'male',activity:'moderate',kcalGoalMode:'auto',kcalGoalPick:null,kcalGoalManual:''}};
 let S=loadBeastmodeState(DEF);
 hydrateUserMacros();
 document.documentElement.setAttribute('data-theme',S.theme||'light');
 document.getElementById('tbtn').textContent=S.theme==='dark'?'☀️':'🌙';
 function syncThemeChrome(){document.querySelector('meta[name="theme-color"]')?.setAttribute('content',S.theme==='dark'?'#080a0d':'#e9edf2')}
 syncThemeChrome();
-function toggleTheme(){S.theme=S.theme==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',S.theme);document.getElementById('tbtn').textContent=S.theme==='dark'?'☀️':'🌙';syncThemeChrome();save();toast(S.theme==='light'?'Light mode':'Dark mode');const id=document.querySelector('.nav-btn.active')?.dataset.page||'dashboard';render(id)}
+function toggleTheme(){S.theme=S.theme==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',S.theme);document.getElementById('tbtn').textContent=S.theme==='dark'?'☀️':'🌙';syncThemeChrome();save();toast(S.theme==='light'?'☀️ Modo claro':'🌙 Modo oscuro');const cur=document.querySelector('.nav-btn.active');if(cur){const id=['dashboard','workout','meals','progress','habits','bmi'][Array.from(document.querySelectorAll('.nav-btn')).indexOf(cur)];render(id)}}
 function dk(){return S.theme!=='light'}
 function C(){return dk()?{b:'#3b82f6',r:'#ff6868',t:'#b7f34a',a:'#3b82f6',c:'#ff6868',sc:{Push:'#3b82f6',Pull:'#3b82f6',Piernas:'#ff6868',Cardio:'#b7f34a',Upper:'#3b82f6',Lower:'#b7f34a'},rb:'rgba(255,255,255,.08)',sdim:'rgba(183,243,74,.25)',sfull:'#b7f34a'}:{b:'#1558d6',r:'#b83a3a',t:'#4d7508',a:'#1558d6',c:'#b83a3a',sc:{Push:'#1558d6',Pull:'#1558d6',Piernas:'#b83a3a',Cardio:'#4d7508',Upper:'#1558d6',Lower:'#4d7508'},rb:'rgba(15,24,32,.08)',sdim:'rgba(77,117,8,.2)',sfull:'#4d7508'}}
 function completeWeek(){
@@ -219,8 +219,7 @@ function tickClock(){
 
 
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
-function showPage(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>{b.classList.remove('active');b.removeAttribute('aria-current')});document.getElementById('page-'+id).classList.add('active');btn.classList.add('active');btn.setAttribute('aria-current','page');render(id);window.scrollTo({top:0,behavior:'auto'})}
-function openPage(id){const btn=document.querySelector(`.nav-btn[data-page="${id}"]`);if(btn)showPage(id,btn);else{document.querySelectorAll('.page').forEach(page=>page.classList.remove('active'));document.getElementById('page-'+id)?.classList.add('active');render(id);window.scrollTo({top:0,behavior:'auto'})}}
+function showPage(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');btn.classList.add('active');render(id)}
 function render(id){if(id==='dashboard')rDash();else if(id==='workout')rWork();else if(id==='meals')rMeals();else if(id==='progress')rProg();else if(id==='habits')rHabits();else if(id==='bmi')rBMI()}
 function ring(pct,color,sz=54){const r=(sz-8)/2,c=sz/2,ci=2*Math.PI*r,d=ci*Math.min(pct,1);return`<svg style="transform:rotate(-90deg)" width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}"><circle cx="${c}" cy="${c}" r="${r}" stroke="${C().rb}" stroke-width="6" fill="none"/><circle cx="${c}" cy="${c}" r="${r}" stroke="${color}" stroke-width="6" fill="none" stroke-dasharray="${d} ${ci}" stroke-linecap="round"/></svg>`}
 let bmiTimer=null;
@@ -228,12 +227,6 @@ function upB(k,v){S.body[k]=v;save();rBMIResults()}
 function upBImm(k,v){
   S.body[k]=v; save(); rBMI();
 }
-const profileUnit=()=>S.body?.unit==='metric'?'metric':'imperial';
-const profileWeightValue=value=>{const n=Number(value)||0;return n?(profileUnit()==='metric'?Math.round(n*.453592*10)/10:n):''};
-const profileHeightCm=()=>{const inches=(Number(S.body?.heightFt)||0)*12+(Number(S.body?.heightIn)||0);return inches?Math.round(inches*2.54):''};
-function setProfileUnit(unit){S.body.unit=unit==='metric'?'metric':'imperial';save();rBMI()}
-function updateProfileMeasurement(key,input,commit=false){if(input.value===''){input.removeAttribute('aria-invalid');S.body[key]='';save();rBMIResults();return}const value=Number(input.value),min=Number(input.min),max=Number(input.max),stored=profileUnit()==='metric'?Math.round(value/.453592*10)/10:value,result=validateBodyValue(key,String(stored));if(!Number.isFinite(value)||value<min||value>max||!result.valid){input.setAttribute('aria-invalid','true');if(commit){toast(`Enter a value from ${min} to ${max}.`);input.focus()}return}input.removeAttribute('aria-invalid');S.body[key]=result.value;save();rBMIResults()}
-function updateProfileHeightCm(input,commit=false){if(input.value===''){input.removeAttribute('aria-invalid');S.body.heightFt='';S.body.heightIn='';save();rBMIResults();return}const value=Number(input.value),min=Number(input.min),max=Number(input.max);if(!Number.isFinite(value)||value<min||value>max){input.setAttribute('aria-invalid','true');if(commit){toast(`Enter a value from ${min} to ${max}.`);input.focus()}return}input.removeAttribute('aria-invalid');const inches=Math.round(value/2.54*10)/10;S.body.heightFt=String(Math.floor(inches/12));S.body.heightIn=String(Math.round((inches%12)*10)/10);save();rBMIResults()}
 function calcBMIData(){
   const b=S.body||{},c=C();
   const totalIn=(parseFloat(b.heightFt)||0)*12+(parseFloat(b.heightIn)||0);
@@ -356,40 +349,38 @@ function rBMIResults(){
 function rBMI(){
   const c=C(),b=S.body;
   document.getElementById('page-bmi').innerHTML=`
-    ${pageIntroHTML('MORE // 05','Goals & Settings','Calibrate targets, build habits, protect data, and control the experience.')}<div class="more-shortcuts"><button onclick="openPage('habits')"><span>✓</span><strong>Habits</strong><small>Build consistency</small></button><button onclick="openPage('progress')"><span>↗</span><strong>Progress</strong><small>Review your week</small></button></div><div class="sec-label">${i('bp')}</div>
+    ${pageIntroHTML('PROFILE // 05','Body & Settings','Calibrate targets, protect data, and control the experience.')}<div class="sec-label">${i('bp')}</div>
     <div class="card ca-blue" style="margin-bottom:12px">
-      <div class="unit-toggle" role="group" aria-label="Measurement unit"><button class="${profileUnit()==='imperial'?'active':''}" aria-pressed="${profileUnit()==='imperial'}" onclick="setProfileUnit('imperial')">Imperial</button><button class="${profileUnit()==='metric'?'active':''}" aria-pressed="${profileUnit()==='metric'}" onclick="setProfileUnit('metric')">Metric</button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
-          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Current weight (${profileUnit()==='metric'?'kg':'lb'})</div>
-          <input type="number" aria-label="Current weight" value="${profileWeightValue(b.weight)}" placeholder="${profileUnit()==='metric'?'84':'185'}" min="${profileUnit()==='metric'?'23':'50'}" max="${profileUnit()==='metric'?'680':'1500'}" inputmode="decimal" oninput="updateProfileMeasurement('weight',this)" onchange="updateProfileMeasurement('weight',this,true)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:${c.b};outline:none">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">${i('cw')} (lb)</div>
+          <input type="number" aria-label="Peso actual en libras" value="${b.weight||''}" placeholder="185" min="50" max="1500" inputmode="decimal" oninput="updateBodyDraft('weight',this)" onchange="commitBodyField('weight',this)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:${c.b};outline:none">
         </div>
         <div>
-          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Goal weight (${profileUnit()==='metric'?'kg':'lb'})</div>
-          <input type="number" aria-label="Goal weight" value="${profileWeightValue(b.goalWeight)}" placeholder="${profileUnit()==='metric'?'75':'165'}" min="${profileUnit()==='metric'?'23':'50'}" max="${profileUnit()==='metric'?'680':'1500'}" inputmode="decimal" oninput="updateProfileMeasurement('goalWeight',this)" onchange="updateProfileMeasurement('goalWeight',this,true)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:${c.t};outline:none">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Peso meta (lb)</div>
+          <input type="number" aria-label="Peso objetivo en libras" value="${b.goalWeight||''}" placeholder="165" min="50" max="1500" inputmode="decimal" oninput="updateBodyDraft('goalWeight',this)" onchange="commitBodyField('goalWeight',this)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:${c.t};outline:none">
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:${profileUnit()==='metric'?'2fr 1fr':'1fr 1fr 1fr'};gap:10px;margin-bottom:12px">
-        ${profileUnit()==='metric'?`<div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Height (cm)</div><input type="number" aria-label="Height in centimeters" value="${profileHeightCm()}" placeholder="175" min="60" max="260" inputmode="numeric" oninput="updateProfileHeightCm(this)" onchange="updateProfileHeightCm(this,true)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none"></div>`:`
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
-          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Feet</div>
-          <input type="number" aria-label="Height in feet" value="${b.heightFt||''}" placeholder="5" min="2" max="8" inputmode="numeric" oninput="updateBodyDraft('heightFt',this)" onchange="commitBodyField('heightFt',this)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Pies</div>
+          <input type="number" aria-label="Altura en pies" value="${b.heightFt||''}" placeholder="5" min="2" max="8" inputmode="numeric" oninput="updateBodyDraft('heightFt',this)" onchange="commitBodyField('heightFt',this)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
         </div>
         <div>
-          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Inches</div>
-          <input type="number" aria-label="Height in inches" value="${b.heightIn||''}" placeholder="10" min="0" max="11.9" step="0.1" inputmode="decimal" oninput="updateBodyDraft('heightIn',this)" onchange="commitBodyField('heightIn',this)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
-        </div>`}
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Pulgadas</div>
+          <input type="number" aria-label="Altura en pulgadas" value="${b.heightIn||''}" placeholder="10" min="0" max="11" inputmode="numeric" oninput="updateBodyDraft('heightIn',this)" onchange="commitBodyField('heightIn',this)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
+        </div>
         <div>
-          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Age</div>
-          <input type="number" aria-label="Age" value="${b.age||''}" placeholder="30" min="13" max="120" inputmode="numeric" oninput="updateBodyDraft('age',this)" onchange="commitBodyField('age',this)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Edad</div>
+          <input type="number" aria-label="Edad" value="${b.age||''}" placeholder="30" min="13" max="120" inputmode="numeric" oninput="updateBodyDraft('age',this)" onchange="commitBodyField('age',this)" style="width:100%;padding:10px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);font-size:22px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--text);outline:none">
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
           <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Sexo</div>
           <div style="display:flex;gap:6px">
-            <button aria-pressed="${b.sex!=='female'}" onclick="upBImm('sex','male')" style="flex:1;padding:10px 0;border-radius:8px;border:1.5px solid ${b.sex!=='female'?c.b:'var(--border)'};background:${b.sex!=='female'?c.b+'18':'var(--bg3)'};color:${b.sex!=='female'?c.b:'var(--text3)'};font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif">Male</button>
-            <button aria-pressed="${b.sex==='female'}" onclick="upBImm('sex','female')" style="flex:1;padding:10px 0;border-radius:8px;border:1.5px solid ${b.sex==='female'?'#d4537e':'var(--border)'};background:${b.sex==='female'?'#d4537e18':'var(--bg3)'};color:${b.sex==='female'?'#d4537e':'var(--text3)'};font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif">Female</button>
+            <button onclick="upBImm('sex','male')" style="flex:1;padding:10px 0;border-radius:8px;border:1.5px solid ${b.sex!=='female'?c.b:'var(--border)'};background:${b.sex!=='female'?c.b+'18':'var(--bg3)'};color:${b.sex!=='female'?c.b:'var(--text3)'};font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif">Hombre</button>
+            <button onclick="upBImm('sex','female')" style="flex:1;padding:10px 0;border-radius:8px;border:1.5px solid ${b.sex==='female'?'#d4537e':'var(--border)'};background:${b.sex==='female'?'#d4537e18':'var(--bg3)'};color:${b.sex==='female'?'#d4537e':'var(--text3)'};font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif">Mujer</button>
           </div>
         </div>
         <div>
@@ -417,17 +408,7 @@ function rBMI(){
   rBMIResults();
 }
 
-function renderDashboardV2(){
-  syncDay();
-  const c=C(),day=S.activeMealDay,totals=currentNutritionTotals(day),kcal=wholeMacro(totals.kcal),goal=getKcalGoal(),kcalPct=goal?Math.min(100,Math.round(kcal/goal*100)):0;
-  const habitTotal=S.habitNames.length*7,habitDone=Object.values(S.habits).filter(Boolean).length,mealDone=Object.values(S.mealChecks).filter(Boolean).length;
-  const context=typeof workoutContext==='function'?workoutContext():null,session=context?.sections?.[0];
-  const target=document.getElementById('page-dashboard');
-  target.innerHTML=`<section class="today-hero"><div><div class="mission-kicker">TODAY · ${i('daysF')[day]}</div><h1>${S.userName?`Ready, ${h(S.userName)}`:'Build your momentum'}</h1><p>${session?`${h(session.day)} is ready when you are.`:'Set up your first workout to begin.'}</p></div><button class="today-primary" onclick="openPage('workout')">${session?'Start workout':'Open training'} <span>→</span></button></section><section class="today-grid"><button class="today-card" onclick="openPage('meals')"><span class="today-card-label">Calories</span><strong>${kcal.toLocaleString()}${goal?` <small>/ ${Math.round(goal).toLocaleString()}</small>`:''}</strong><span class="today-card-meta">${goal?`${kcalPct}% of your daily goal`:'Set a calorie goal'}</span><i><b style="width:${kcalPct}%"></b></i></button><button class="today-card" onclick="openPage('habits')"><span class="today-card-label">Habits</span><strong>${habitDone}<small> / ${habitTotal}</small></strong><span class="today-card-meta">Keep your streak moving</span><i><b style="width:${Math.round(habitDone/habitTotal*100)}%"></b></i></button><button class="today-card" onclick="openPage('meals')"><span class="today-card-label">Meals</span><strong>${mealDone}<small> / ${S.meals.length*7}</small></strong><span class="today-card-meta">Log your next meal</span><i><b style="width:${Math.round(mealDone/Math.max(1,S.meals.length*7)*100)}%"></b></i></button></section><section class="today-actions"><button onclick="openPage('meals')"><span>＋</span> Log food</button><button onclick="openPage('progress')"><span>↗</span> Check progress</button><button onclick="openPage('bmi')"><span>⚙</span> Goals & settings</button></section><section class="today-note"><strong>This week</strong><span>${S.activeProgressWeek+1} of ${WK}</span><div><b style="width:${Math.round((S.activeProgressWeek+1)/WK*100)}%"></b></div></section>`;
-}
 function rDash(){
-  renderDashboardV2();
-  return;
   const c=C(),b=S.body||{};
   const isDark=dk();
   // sync meal day to today (GMT-4)
