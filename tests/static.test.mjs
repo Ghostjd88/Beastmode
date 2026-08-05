@@ -28,6 +28,7 @@ test('document has one clock and balanced primary structure',()=>{
 });
 test('accessibility safeguards are present',()=>{
   assert.doesNotMatch(html,/user-scalable=no|maximum-scale=1/);
+  assert.match(html,/viewport-fit=cover/);
   assert.match(css,/focus-visible/);
   assert.equal((html.match(/class="nav-btn/g)||[]).length,(html.match(/class="nav-btn[^>]*aria-label=/g)||[]).length);
   assert.match(script,/aria-invalid/);
@@ -35,6 +36,8 @@ test('accessibility safeguards are present',()=>{
   const accessibility=modules['js/accessibility.js'];
   for(const feature of ['ensurePageHeading','enhanceDialog','trapDialogFocus','aria-modal','Escape'])assert.match(accessibility,new RegExp(feature));
   assert.match(forged,/\.sr-only/);assert.match(forged,/min-height:44px/);assert.match(forged,/max-width:420px/);assert.match(forged,/white-space:normal/);
+  assert.match(forged,/@media\(max-width:560px\)\{\.nav-btn\{flex:1 1 0;min-width:0\}\}/);assert.match(forged,/safe-area-inset-top/);assert.match(forged,/safe-area-inset-left/);
+  assert.match(modules['js/app.js'],/requestAnimationFrame\(\(\)=>window\.scrollTo\(\{top:0,behavior:'auto'\}\)\)/);
 });
 test('browser-only secrets and broken AI calls are absent',()=>{
   assert.doesNotMatch(script,/api\.anthropic\.com|claude-sonnet|swIXJ6/);
@@ -86,7 +89,7 @@ test('food macros update independently from meal completion and display as whole
 test('starter meal plan scales four editable macro styles to the calorie goal',()=>{const nutrition=modules['js/nutrition.js'],api=new Function(nutrition+';return{buildStarterMealPlan,starterPlanTotals};')(),styles=['balanced','highCarb','highProtein','highFat'];for(const goal of [1200,1800,2200,3000,4500])for(const style of styles){const plan=api.buildStarterMealPlan(goal,style),totals=api.starterPlanTotals(plan);assert.equal(plan.meals.length,4);assert.ok(plan.meals.every(meal=>meal.items.length>=3));assert.ok(Math.abs(totals.kcal-goal)<=5,`${style} ${goal}: ${totals.kcal}`)}const totals=Object.fromEntries(styles.map(style=>[style,api.starterPlanTotals(api.buildStarterMealPlan(2200,style))]));assert.ok(totals.highCarb.c>totals.balanced.c&&totals.highCarb.f<totals.balanced.f);assert.ok(totals.highProtein.p>totals.balanced.p&&totals.highProtein.c<totals.balanced.c);assert.ok(totals.highFat.f>totals.balanced.f&&totals.highFat.c<totals.balanced.c);assert.throws(()=>api.buildStarterMealPlan(499));assert.throws(()=>api.buildStarterMealPlan(10001));assert.throws(()=>api.buildStarterMealPlan(2200,'unknown'));for(const name of ['openStarterMealPlan','applyStarterMealPlan','clearStarterPlanFoods','starterPlanCardHTML','setStarterPlanStyle'])assert.match(nutrition,new RegExp(`function ${name}`));for(const label of ['High carb / low fat','High protein / low carb','High fat / low carb'])assert.match(nutrition,new RegExp(label));assert.match(modules['js/app.js'],/Build starter meal plan/);assert.match(modules['js/app.js'],/aria-label="Daily calorie goal"/);assert.match(nutrition,/const previous=clone\(S\)/)});
 test('dashboard provides summaries, charts and personal records',()=>{const insights=modules['js/insights.js'];assert.match(insights,/Weekly coaching summary/);assert.match(insights,/Training volume/);assert.match(insights,/Calories/);assert.match(insights,/Personal records/)});
 test('optional PIN uses salted hashing and attempt cooldown',()=>{const security=modules['js/security.js'];assert.match(security,/crypto\.subtle\.digest\('SHA-256'/);assert.match(security,/crypto\.getRandomValues/);assert.match(security,/pinCooldownUntil/);assert.match(security,/does not encrypt browser storage/)});
-test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v16/);assert.match(serviceWorker,/css\/forged\.css/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
+test('offline installation assets are complete',()=>{assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'./');assert.ok(manifest.icons.some(icon=>icon.src.includes('icon.svg')));assert.match(html,/manifest\.webmanifest/);assert.match(serviceWorker,/beastmode-v17/);assert.match(serviceWorker,/css\/forged\.css/);for(const path of modulePaths)assert.match(serviceWorker,new RegExp(path.replace(/[./]/g,'\\$&')))});
 test('browser self-test covers core application surfaces',()=>{
   const selfTest=modules['js/browser-check.js'];
   for(const label of ['Accessible interaction shell','Versioned storage write','Backup validation','Workout rendering','Mobile workout flow','Nutrition rendering','Food quantity units','Starter meal plan','Meals macros without check-in','Manual calorie input','Progress validation','Exercise dataset'])assert.match(selfTest,new RegExp(label));

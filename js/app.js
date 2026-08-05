@@ -219,7 +219,7 @@ function tickClock(){
 
 
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
-function showPage(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');btn.classList.add('active');render(id)}
+function showPage(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');btn.classList.add('active');render(id);window.scrollTo({top:0,behavior:'auto'});requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'auto'}))}
 function render(id){if(id==='dashboard')rDash();else if(id==='workout')rWork();else if(id==='meals')rMeals();else if(id==='progress')rProg();else if(id==='habits')rHabits();else if(id==='bmi')rBMI()}
 function ring(pct,color,sz=54){const r=(sz-8)/2,c=sz/2,ci=2*Math.PI*r,d=ci*Math.min(pct,1);return`<svg style="transform:rotate(-90deg)" width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}"><circle cx="${c}" cy="${c}" r="${r}" stroke="${C().rb}" stroke-width="6" fill="none"/><circle cx="${c}" cy="${c}" r="${r}" stroke="${color}" stroke-width="6" fill="none" stroke-dasharray="${d} ${ci}" stroke-linecap="round"/></svg>`}
 let bmiTimer=null;
